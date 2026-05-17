@@ -33,4 +33,46 @@ public static class Mappers
 
     public static NotificationDto ToDto(this Notification n) =>
         new(n.Id, n.TitleEn, n.TitleAr, n.BodyEn, n.BodyAr, n.Kind, n.CreatedAt, n.ReadAt);
+
+    // ── Phase 1 mappers ────────────────────────────────────────────────────
+
+    public static JourneyDto ToDto(this Journey j) =>
+        new(j.Id, j.NameEn, j.NameAr, j.Persona, j.StageCount, j.Status, j.CreatedAt);
+
+    public static JourneyStageDto ToDto(this JourneyStage s) =>
+        new(s.Id, s.JourneyId, s.Sequence, s.NameEn, s.NameAr,
+            s.TouchpointEn, s.TouchpointAr, s.PainPointEn, s.PainPointAr, s.EmotionScore);
+
+    public static VocResponseDto ToDto(this VocResponse v) =>
+        new(v.Id, v.SurveyEn, v.SurveyAr, v.Channel, v.NpsScore, v.Sentiment,
+            v.CommentEn, v.CommentAr, v.RespondedAt, v.CustomerName);
+
+    public static KbArticleDto ToDto(this KbArticle a) =>
+        new(a.Id, a.TitleEn, a.TitleAr, a.Category, a.BodyEn, a.BodyAr, a.AuthorId, a.Status, a.UpdatedAt);
+
+    public static ProgrammeInitiativeDto ToDto(this ProgrammeInitiative p) =>
+        new(p.Id, p.NameEn, p.NameAr, p.Owner, p.RagStatus, p.ProgressPct,
+            p.StartDate, p.TargetDate, p.Notes);
+
+    public static GovernanceBodyDto ToDto(this GovernanceBody b)
+    {
+        // Members are persisted as a JSON array of strings. Decode safely so
+        // a malformed row doesn't break the whole list endpoint.
+        IReadOnlyList<string> members;
+        try
+        {
+            members = System.Text.Json.JsonSerializer.Deserialize<List<string>>(
+                string.IsNullOrWhiteSpace(b.MembersJson) ? "[]" : b.MembersJson)
+                ?? new List<string>();
+        }
+        catch
+        {
+            members = new List<string>();
+        }
+        return new GovernanceBodyDto(b.Id, b.NameEn, b.NameAr, b.Cadence, b.Chair, members, b.CharterUrl);
+    }
+
+    public static GovernanceDecisionDto ToDto(this GovernanceDecision d) =>
+        new(d.Id, d.BodyId, d.DecidedAt, d.TitleEn, d.TitleAr, d.Decision,
+            d.OwnerEn, d.OwnerAr, d.DueDate);
 }

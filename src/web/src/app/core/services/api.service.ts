@@ -4,6 +4,9 @@ import { firstValueFrom } from 'rxjs';
 import {
   ComplaintDto, ComplaintListItemDto, ComplaintsByCategoryDto, ContactChannelDto,
   InboxThreadDto, KpiDto, NotificationDto, RolePermissionDto,
+  JourneyDto, JourneyDetailDto, VocResponseDto, KbArticleDto, UpsertKbArticleRequest,
+  ProgrammeInitiativeDto, UpdateProgrammeStatusRequest, GovernanceBodyDto,
+  GovernanceBodyDetailDto, GovernanceDecisionDto, CreateGovernanceDecisionRequest,
 } from '../models/types';
 import { environment } from '../../../environments/environment';
 
@@ -83,5 +86,60 @@ export class ApiService {
 
   markNotificationRead(id: number) {
     return firstValueFrom(this.http.patch(`${this.base}/notifications/${id}/read`, {}));
+  }
+
+  // ── Phase 1 ─────────────────────────────────────────────────────────────
+
+  journeys() {
+    return firstValueFrom(this.http.get<JourneyDto[]>(`${this.base}/journeys`));
+  }
+  journey(id: number) {
+    return firstValueFrom(this.http.get<JourneyDetailDto>(`${this.base}/journeys/${id}`));
+  }
+
+  voc(filter?: { channel?: string; sentiment?: string }) {
+    const params: any = {};
+    if (filter?.channel) params.channel = filter.channel;
+    if (filter?.sentiment) params.sentiment = filter.sentiment;
+    return firstValueFrom(this.http.get<VocResponseDto[]>(`${this.base}/voc`, { params }));
+  }
+  updateVocComment(id: number, commentEn: string, commentAr: string) {
+    return firstValueFrom(this.http.put<VocResponseDto>(`${this.base}/voc/${id}/comment`, { commentEn, commentAr }));
+  }
+
+  kbList(filter?: { category?: string; q?: string }) {
+    const params: any = {};
+    if (filter?.category) params.category = filter.category;
+    if (filter?.q) params.q = filter.q;
+    return firstValueFrom(this.http.get<KbArticleDto[]>(`${this.base}/kb`, { params }));
+  }
+  kbGet(id: number) {
+    return firstValueFrom(this.http.get<KbArticleDto>(`${this.base}/kb/${id}`));
+  }
+  kbCreate(req: UpsertKbArticleRequest) {
+    return firstValueFrom(this.http.post<KbArticleDto>(`${this.base}/kb`, req));
+  }
+  kbUpdate(id: number, req: UpsertKbArticleRequest) {
+    return firstValueFrom(this.http.put<KbArticleDto>(`${this.base}/kb/${id}`, req));
+  }
+  kbDelete(id: number) {
+    return firstValueFrom(this.http.delete(`${this.base}/kb/${id}`));
+  }
+
+  programme() {
+    return firstValueFrom(this.http.get<ProgrammeInitiativeDto[]>(`${this.base}/programme`));
+  }
+  programmeStatus(id: number, req: UpdateProgrammeStatusRequest) {
+    return firstValueFrom(this.http.put<ProgrammeInitiativeDto>(`${this.base}/programme/${id}/status`, req));
+  }
+
+  governanceBodies() {
+    return firstValueFrom(this.http.get<GovernanceBodyDto[]>(`${this.base}/governance/bodies`));
+  }
+  governanceBody(id: number) {
+    return firstValueFrom(this.http.get<GovernanceBodyDetailDto>(`${this.base}/governance/bodies/${id}`));
+  }
+  governanceDecision(bodyId: number, req: CreateGovernanceDecisionRequest) {
+    return firstValueFrom(this.http.post<GovernanceDecisionDto>(`${this.base}/governance/bodies/${bodyId}/decisions`, req));
   }
 }

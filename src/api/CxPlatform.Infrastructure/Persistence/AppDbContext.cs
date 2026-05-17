@@ -18,6 +18,15 @@ public class AppDbContext : DbContext
     public DbSet<ContactChannel>  ContactChannels => Set<ContactChannel>();
     public DbSet<Notification>    Notifications   => Set<Notification>();
 
+    // Phase 1
+    public DbSet<Journey>              Journeys              => Set<Journey>();
+    public DbSet<JourneyStage>         JourneyStages         => Set<JourneyStage>();
+    public DbSet<VocResponse>          VocResponses          => Set<VocResponse>();
+    public DbSet<KbArticle>            KbArticles            => Set<KbArticle>();
+    public DbSet<ProgrammeInitiative>  ProgrammeInitiatives  => Set<ProgrammeInitiative>();
+    public DbSet<GovernanceBody>       GovernanceBodies      => Set<GovernanceBody>();
+    public DbSet<GovernanceDecision>   GovernanceDecisions   => Set<GovernanceDecision>();
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         // ── Users ───────────────────────────────────────────────────────────
@@ -144,6 +153,95 @@ public class AppDbContext : DbContext
             e.Property(x => x.BodyEn).HasMaxLength(500);
             e.Property(x => x.BodyAr).HasMaxLength(500);
             e.Property(x => x.Kind).HasMaxLength(32);
+        });
+
+        // ── Phase 1: Journeys ──────────────────────────────────────────────
+        mb.Entity<Journey>(e =>
+        {
+            e.ToTable("journeys");
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.NameEn).HasMaxLength(190).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(190).IsRequired();
+            e.Property(x => x.Persona).HasMaxLength(96);
+            e.Property(x => x.Status).HasMaxLength(32);
+        });
+
+        mb.Entity<JourneyStage>(e =>
+        {
+            e.ToTable("journey_stages");
+            e.HasIndex(x => new { x.JourneyId, x.Sequence });
+            e.Property(x => x.NameEn).HasMaxLength(190).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(190).IsRequired();
+            e.Property(x => x.TouchpointEn).HasMaxLength(190);
+            e.Property(x => x.TouchpointAr).HasMaxLength(190);
+            e.Property(x => x.PainPointEn).HasColumnType("text");
+            e.Property(x => x.PainPointAr).HasColumnType("text");
+        });
+
+        // ── Phase 1: VoC ───────────────────────────────────────────────────
+        mb.Entity<VocResponse>(e =>
+        {
+            e.ToTable("voc_responses");
+            e.HasIndex(x => x.Channel);
+            e.HasIndex(x => x.Sentiment);
+            e.HasIndex(x => x.RespondedAt);
+            e.Property(x => x.SurveyEn).HasMaxLength(190);
+            e.Property(x => x.SurveyAr).HasMaxLength(190);
+            e.Property(x => x.Channel).HasMaxLength(32);
+            e.Property(x => x.Sentiment).HasMaxLength(16);
+            e.Property(x => x.CommentEn).HasColumnType("text");
+            e.Property(x => x.CommentAr).HasColumnType("text");
+            e.Property(x => x.CustomerName).HasMaxLength(190);
+        });
+
+        // ── Phase 1: KB ────────────────────────────────────────────────────
+        mb.Entity<KbArticle>(e =>
+        {
+            e.ToTable("kb_articles");
+            e.HasIndex(x => x.Category);
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.TitleEn).HasMaxLength(255).IsRequired();
+            e.Property(x => x.TitleAr).HasMaxLength(255).IsRequired();
+            e.Property(x => x.Category).HasMaxLength(96);
+            e.Property(x => x.Status).HasMaxLength(32);
+            e.Property(x => x.BodyEn).HasColumnType("text");
+            e.Property(x => x.BodyAr).HasColumnType("text");
+        });
+
+        // ── Phase 1: Programme ─────────────────────────────────────────────
+        mb.Entity<ProgrammeInitiative>(e =>
+        {
+            e.ToTable("programme_initiatives");
+            e.HasIndex(x => x.RagStatus);
+            e.Property(x => x.NameEn).HasMaxLength(190).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(190).IsRequired();
+            e.Property(x => x.Owner).HasMaxLength(190);
+            e.Property(x => x.RagStatus).HasMaxLength(16);
+            e.Property(x => x.Notes).HasColumnType("text");
+        });
+
+        // ── Phase 1: Governance ────────────────────────────────────────────
+        mb.Entity<GovernanceBody>(e =>
+        {
+            e.ToTable("governance_bodies");
+            e.Property(x => x.NameEn).HasMaxLength(190).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(190).IsRequired();
+            e.Property(x => x.Cadence).HasMaxLength(32);
+            e.Property(x => x.Chair).HasMaxLength(190);
+            e.Property(x => x.MembersJson).HasColumnType("json");
+            e.Property(x => x.CharterUrl).HasMaxLength(500);
+        });
+
+        mb.Entity<GovernanceDecision>(e =>
+        {
+            e.ToTable("governance_decisions");
+            e.HasIndex(x => x.BodyId);
+            e.HasIndex(x => x.DecidedAt);
+            e.Property(x => x.TitleEn).HasMaxLength(255).IsRequired();
+            e.Property(x => x.TitleAr).HasMaxLength(255).IsRequired();
+            e.Property(x => x.Decision).HasColumnType("text");
+            e.Property(x => x.OwnerEn).HasMaxLength(190);
+            e.Property(x => x.OwnerAr).HasMaxLength(190);
         });
     }
 }

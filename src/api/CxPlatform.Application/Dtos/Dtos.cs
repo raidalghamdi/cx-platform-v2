@@ -131,3 +131,139 @@ public record NotificationDto(
 // ── Health ─────────────────────────────────────────────────────────────────
 
 public record HealthDto(bool Ok, string Version, DateTime Timestamp);
+
+// ── Phase 1: Journeys ──────────────────────────────────────────────────────
+
+public record JourneyDto(
+    long Id,
+    string NameEn,
+    string NameAr,
+    string Persona,
+    int StageCount,
+    string Status,
+    DateTime CreatedAt);
+
+public record JourneyStageDto(
+    long Id,
+    long JourneyId,
+    int Sequence,
+    string NameEn,
+    string NameAr,
+    string TouchpointEn,
+    string TouchpointAr,
+    string PainPointEn,
+    string PainPointAr,
+    int EmotionScore);
+
+public record JourneyDetailDto(JourneyDto Journey, IReadOnlyList<JourneyStageDto> Stages);
+
+public record UpsertJourneyRequest(
+    string NameEn,
+    string NameAr,
+    string Persona,
+    string Status,
+    IReadOnlyList<UpsertJourneyStage> Stages);
+
+public record UpsertJourneyStage(
+    int Sequence,
+    string NameEn,
+    string NameAr,
+    string TouchpointEn,
+    string TouchpointAr,
+    string PainPointEn,
+    string PainPointAr,
+    int EmotionScore);
+
+// ── Phase 1: VoC ───────────────────────────────────────────────────────────
+
+public record VocResponseDto(
+    long Id,
+    string SurveyEn,
+    string SurveyAr,
+    string Channel,
+    int NpsScore,
+    string Sentiment,
+    string CommentEn,
+    string CommentAr,
+    DateTime RespondedAt,
+    string CustomerName);
+
+public record CreateVocResponseRequest(
+    string SurveyEn,
+    string SurveyAr,
+    string Channel,
+    int NpsScore,
+    string Sentiment,
+    string CommentEn,
+    string CommentAr,
+    string CustomerName);
+
+public record UpdateVocCommentRequest(string CommentEn, string CommentAr);
+
+// ── Phase 1: KB ────────────────────────────────────────────────────────────
+
+public record KbArticleDto(
+    long Id,
+    string TitleEn,
+    string TitleAr,
+    string Category,
+    string BodyEn,
+    string BodyAr,
+    long? AuthorId,
+    string Status,
+    DateTime UpdatedAt);
+
+public record UpsertKbArticleRequest(
+    string TitleEn,
+    string TitleAr,
+    string Category,
+    string BodyEn,
+    string BodyAr,
+    string Status);
+
+// ── Phase 1: Programme ─────────────────────────────────────────────────────
+
+public record ProgrammeInitiativeDto(
+    long Id,
+    string NameEn,
+    string NameAr,
+    string Owner,
+    string RagStatus,
+    int ProgressPct,
+    DateTime StartDate,
+    DateTime TargetDate,
+    string Notes);
+
+public record UpdateProgrammeStatusRequest(string RagStatus, int ProgressPct, string? Notes);
+
+// ── Phase 1: Governance ────────────────────────────────────────────────────
+
+public record GovernanceBodyDto(
+    long Id,
+    string NameEn,
+    string NameAr,
+    string Cadence,
+    string Chair,
+    IReadOnlyList<string> Members,
+    string? CharterUrl);
+
+public record GovernanceDecisionDto(
+    long Id,
+    long BodyId,
+    DateTime DecidedAt,
+    string TitleEn,
+    string TitleAr,
+    string Decision,
+    string OwnerEn,
+    string OwnerAr,
+    DateTime? DueDate);
+
+public record GovernanceBodyDetailDto(GovernanceBodyDto Body, IReadOnlyList<GovernanceDecisionDto> Decisions);
+
+public record CreateGovernanceDecisionRequest(
+    string TitleEn,
+    string TitleAr,
+    string Decision,
+    string OwnerEn,
+    string OwnerAr,
+    DateTime? DueDate);

@@ -105,6 +105,12 @@ export class AppShellComponent {
     { href: '/dashboard',  key: 'nav.dashboard',  pageKey: '/dashboard' },
     { href: '/complaints', key: 'nav.complaints', pageKey: '/complaints' },
     { href: '/inbox',      key: 'nav.inbox',      pageKey: '/inbox' },
+    // Phase 1
+    { href: '/journeys',   key: 'nav.journeys',   pageKey: '/journeys' },
+    { href: '/voc',        key: 'nav.voc',        pageKey: '/voc' },
+    { href: '/kb',         key: 'nav.kb',         pageKey: '/kb' },
+    { href: '/programme',  key: 'nav.programme',  pageKey: '/programme' },
+    { href: '/governance', key: 'nav.governance', pageKey: '/governance' },
     { href: '/admin',      key: 'nav.admin',      pageKey: '/admin' },
   ];
 

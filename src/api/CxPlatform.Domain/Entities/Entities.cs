@@ -147,3 +147,93 @@ public class Notification : EntityBase
     public string Kind { get; set; } = "info";       // info/warning/success
     public DateTime? ReadAt { get; set; }
 }
+
+// ── Phase 1 — Journeys ──────────────────────────────────────────────────────
+
+public class Journey : EntityBase
+{
+    public string NameEn { get; set; } = "";
+    public string NameAr { get; set; } = "";
+    public string Persona { get; set; } = "";        // e.g. "Citizen — Onboarding", "Business — Renewal"
+    public int StageCount { get; set; }              // denormalised count for list views
+    public string Status { get; set; } = "active";   // active/draft/retired
+}
+
+public class JourneyStage : EntityBase
+{
+    public long JourneyId { get; set; }
+    public int Sequence { get; set; }                // 1-based stage order
+    public string NameEn { get; set; } = "";
+    public string NameAr { get; set; } = "";
+    public string TouchpointEn { get; set; } = "";
+    public string TouchpointAr { get; set; } = "";
+    public string PainPointEn { get; set; } = "";
+    public string PainPointAr { get; set; } = "";
+    public int EmotionScore { get; set; }            // -2..+2 (frustrated → delighted)
+}
+
+// ── Phase 1 — Voice of Customer ─────────────────────────────────────────────
+
+public class VocResponse : EntityBase
+{
+    public string SurveyEn { get; set; } = "";       // e.g. "Service satisfaction Q1"
+    public string SurveyAr { get; set; } = "";
+    public string Channel { get; set; } = "";        // email/whatsapp/portal/branch
+    public int NpsScore { get; set; }                // 0-10
+    public string Sentiment { get; set; } = "neutral"; // positive/neutral/negative
+    public string CommentEn { get; set; } = "";
+    public string CommentAr { get; set; } = "";
+    public DateTime RespondedAt { get; set; } = DateTime.UtcNow;
+    public string CustomerName { get; set; } = "";
+}
+
+// ── Phase 1 — Knowledge Base ────────────────────────────────────────────────
+
+public class KbArticle : EntityBase
+{
+    public string TitleEn { get; set; } = "";
+    public string TitleAr { get; set; } = "";
+    public string Category { get; set; } = "";       // free-form taxonomy, e.g. "complaints"
+    public string BodyEn { get; set; } = "";
+    public string BodyAr { get; set; } = "";
+    public long? AuthorId { get; set; }
+    public string Status { get; set; } = "published"; // draft/published/retired
+}
+
+// ── Phase 1 — Programme initiatives ─────────────────────────────────────────
+
+public class ProgrammeInitiative : EntityBase
+{
+    public string NameEn { get; set; } = "";
+    public string NameAr { get; set; } = "";
+    public string Owner { get; set; } = "";          // person/team name (denormalised)
+    public string RagStatus { get; set; } = "amber"; // red/amber/green
+    public int ProgressPct { get; set; }             // 0..100
+    public DateTime StartDate { get; set; } = DateTime.UtcNow;
+    public DateTime TargetDate { get; set; } = DateTime.UtcNow.AddMonths(3);
+    public string Notes { get; set; } = "";
+}
+
+// ── Phase 1 — Governance bodies + decisions ─────────────────────────────────
+
+public class GovernanceBody : EntityBase
+{
+    public string NameEn { get; set; } = "";
+    public string NameAr { get; set; } = "";
+    public string Cadence { get; set; } = "monthly"; // weekly/biweekly/monthly/quarterly
+    public string Chair { get; set; } = "";
+    public string MembersJson { get; set; } = "[]";  // JSON array of names
+    public string? CharterUrl { get; set; }
+}
+
+public class GovernanceDecision : EntityBase
+{
+    public long BodyId { get; set; }
+    public DateTime DecidedAt { get; set; } = DateTime.UtcNow;
+    public string TitleEn { get; set; } = "";
+    public string TitleAr { get; set; } = "";
+    public string Decision { get; set; } = "";       // free-form summary
+    public string OwnerEn { get; set; } = "";
+    public string OwnerAr { get; set; } = "";
+    public DateTime? DueDate { get; set; }
+}

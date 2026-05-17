@@ -101,3 +101,129 @@ export interface NotificationDto {
   createdAt: string;
   readAt?: string | null;
 }
+
+// ── Phase 1 ───────────────────────────────────────────────────────────────
+
+export type JourneyStatus = 'active' | 'draft' | 'retired';
+
+export interface JourneyDto {
+  id: number;
+  nameEn: string;
+  nameAr: string;
+  persona: string;
+  stageCount: number;
+  status: JourneyStatus;
+  createdAt: string;
+}
+
+export interface JourneyStageDto {
+  id: number;
+  journeyId: number;
+  sequence: number;
+  nameEn: string;
+  nameAr: string;
+  touchpointEn: string;
+  touchpointAr: string;
+  painPointEn: string;
+  painPointAr: string;
+  emotionScore: number;          // -2..+2
+}
+
+export interface JourneyDetailDto {
+  journey: JourneyDto;
+  stages: JourneyStageDto[];
+}
+
+export type Sentiment = 'positive' | 'neutral' | 'negative';
+
+export interface VocResponseDto {
+  id: number;
+  surveyEn: string;
+  surveyAr: string;
+  channel: string;
+  npsScore: number;
+  sentiment: Sentiment;
+  commentEn: string;
+  commentAr: string;
+  respondedAt: string;
+  customerName: string;
+}
+
+export type KbStatus = 'draft' | 'published' | 'retired';
+
+export interface KbArticleDto {
+  id: number;
+  titleEn: string;
+  titleAr: string;
+  category: string;
+  bodyEn: string;
+  bodyAr: string;
+  authorId?: number | null;
+  status: KbStatus;
+  updatedAt: string;
+}
+
+export interface UpsertKbArticleRequest {
+  titleEn: string;
+  titleAr: string;
+  category: string;
+  bodyEn: string;
+  bodyAr: string;
+  status: KbStatus;
+}
+
+export type RagStatus = 'red' | 'amber' | 'green';
+
+export interface ProgrammeInitiativeDto {
+  id: number;
+  nameEn: string;
+  nameAr: string;
+  owner: string;
+  ragStatus: RagStatus;
+  progressPct: number;
+  startDate: string;
+  targetDate: string;
+  notes: string;
+}
+
+export interface UpdateProgrammeStatusRequest {
+  ragStatus: RagStatus;
+  progressPct: number;
+  notes?: string;
+}
+
+export interface GovernanceBodyDto {
+  id: number;
+  nameEn: string;
+  nameAr: string;
+  cadence: string;
+  chair: string;
+  members: string[];
+  charterUrl?: string | null;
+}
+
+export interface GovernanceDecisionDto {
+  id: number;
+  bodyId: number;
+  decidedAt: string;
+  titleEn: string;
+  titleAr: string;
+  decision: string;
+  ownerEn: string;
+  ownerAr: string;
+  dueDate?: string | null;
+}
+
+export interface GovernanceBodyDetailDto {
+  body: GovernanceBodyDto;
+  decisions: GovernanceDecisionDto[];
+}
+
+export interface CreateGovernanceDecisionRequest {
+  titleEn: string;
+  titleAr: string;
+  decision: string;
+  ownerEn: string;
+  ownerAr: string;
+  dueDate?: string | null;
+}

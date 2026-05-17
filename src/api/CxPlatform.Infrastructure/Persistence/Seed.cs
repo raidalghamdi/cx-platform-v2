@@ -77,13 +77,19 @@ public static class Seed
             "/kb", "/copilot", "/portal", "/programme", "/governance",
             "/architecture", "/audit", "/automation", "/admin", "/notifications", "/profile",
         };
-        // matrix[role][page] = allowed
+        // matrix[role][page] = allowed. Page-level access is binary (the
+        // RolePermission table doesn't model read/write). Controller-level
+        // [Authorize(Roles=...)] enforces write privileges separately.
+        //
+        // Phase 1 grants (per brief): journeys/voc admin+supervisor+quality+executive+agent;
+        // kb everyone except customer-write; programme exec+admin+supervisor+quality;
+        // governance admin+supervisor+quality+executive.
         var matrix = new Dictionary<string, HashSet<string>>
         {
             ["admin"]      = new(pages),
             ["supervisor"] = new(new[]{"/about","/dashboard","/journeys","/voc","/complaints","/inbox","/kb","/copilot","/programme","/governance","/architecture","/automation","/notifications","/profile"}),
             ["agent"]      = new(new[]{"/about","/journeys","/complaints","/inbox","/kb","/copilot","/notifications","/profile"}),
-            ["quality"]    = new(new[]{"/about","/journeys","/voc","/complaints","/kb","/governance","/architecture","/audit","/notifications","/profile"}),
+            ["quality"]    = new(new[]{"/about","/journeys","/voc","/complaints","/kb","/programme","/governance","/architecture","/audit","/notifications","/profile"}),
             ["customer"]   = new(new[]{"/about","/portal","/kb","/notifications","/profile"}),
             ["executive"]  = new(new[]{"/about","/dashboard","/journeys","/voc","/kb","/programme","/governance","/architecture","/notifications","/profile"}),
         };
@@ -241,6 +247,204 @@ public static class Seed
             new Notification { UserId = admin.Id, TitleEn = "Knowledge article published", TitleAr = "نشر مقال جديد", BodyEn = "Nafath sign-in troubleshooting was published.", BodyAr = "تم نشر مقال حول حل مشكلات نفاذ.", Kind = "success" },
             new Notification { UserId = admin.Id, TitleEn = "Audit chain verified", TitleAr = "تم التحقق من سلسلة التدقيق", BodyEn = "0 mismatches on the last daily verify.", BodyAr = "0 اختلاف في آخر تحقق يومي.", Kind = "success" }
         );
+
+        // ── Phase 1: Journeys (4 with stages) ─────────────────────────────
+        var journeys = new[]
+        {
+            new Journey { NameEn = "New customer onboarding", NameAr = "إعداد المستفيد الجديد",
+                Persona = "Citizen — Onboarding", Status = "active", StageCount = 4 },
+            new Journey { NameEn = "Complaint resolution",    NameAr = "حل الشكوى",
+                Persona = "Citizen — Service",    Status = "active", StageCount = 3 },
+            new Journey { NameEn = "Commercial registry renewal", NameAr = "تجديد السجل التجاري",
+                Persona = "Business — Renewal",   Status = "active", StageCount = 4 },
+            new Journey { NameEn = "Public consultation participation", NameAr = "المشاركة في الاستشارة العامة",
+                Persona = "Citizen — Tafa3al",    Status = "draft",  StageCount = 3 },
+        };
+        db.Journeys.AddRange(journeys);
+        await db.SaveChangesAsync(ct);
+
+        db.JourneyStages.AddRange(
+            new JourneyStage { JourneyId = journeys[0].Id, Sequence = 1, NameEn = "Awareness", NameAr = "الاطلاع",
+                TouchpointEn = "Web search / national portal", TouchpointAr = "البحث عبر الإنترنت / البوابة الوطنية",
+                PainPointEn = "Hard to discover which authority owns the service.",
+                PainPointAr = "صعوبة معرفة الجهة المسؤولة عن الخدمة.", EmotionScore = -1 },
+            new JourneyStage { JourneyId = journeys[0].Id, Sequence = 2, NameEn = "Sign-in via Nafath", NameAr = "الدخول عبر نفاذ",
+                TouchpointEn = "Nafath app", TouchpointAr = "تطبيق نفاذ",
+                PainPointEn = "Timeout if the OTP arrives late.", PainPointAr = "انتهاء الجلسة عند تأخر رمز التحقق.",
+                EmotionScore = 0 },
+            new JourneyStage { JourneyId = journeys[0].Id, Sequence = 3, NameEn = "Profile completion", NameAr = "استكمال الملف",
+                TouchpointEn = "Portal profile form", TouchpointAr = "نموذج الملف في البوابة",
+                PainPointEn = "Repeats data already in national registry.",
+                PainPointAr = "تكرار بيانات موجودة في السجل الوطني.", EmotionScore = -1 },
+            new JourneyStage { JourneyId = journeys[0].Id, Sequence = 4, NameEn = "First service request", NameAr = "أول طلب خدمة",
+                TouchpointEn = "Service catalog", TouchpointAr = "كتالوج الخدمات",
+                PainPointEn = "No clear ETA on the request.", PainPointAr = "لا يوجد وقت إنجاز واضح للطلب.",
+                EmotionScore = 1 },
+
+            new JourneyStage { JourneyId = journeys[1].Id, Sequence = 1, NameEn = "Lodge complaint", NameAr = "تقديم الشكوى",
+                TouchpointEn = "Portal / WhatsApp / Branch", TouchpointAr = "البوابة / واتساب / الفرع",
+                PainPointEn = "Unclear which channel resolves fastest.",
+                PainPointAr = "غير واضح أي قناة الأسرع في الرد.", EmotionScore = -2 },
+            new JourneyStage { JourneyId = journeys[1].Id, Sequence = 2, NameEn = "Triage & investigation", NameAr = "الفرز والتحقيق",
+                TouchpointEn = "Internal queue", TouchpointAr = "قائمة العمل الداخلية",
+                PainPointEn = "Customer waits without status updates.",
+                PainPointAr = "ينتظر المستفيد بدون تحديثات.", EmotionScore = -1 },
+            new JourneyStage { JourneyId = journeys[1].Id, Sequence = 3, NameEn = "Closure & follow-up", NameAr = "الإغلاق والمتابعة",
+                TouchpointEn = "Email / SMS", TouchpointAr = "البريد / الرسائل القصيرة",
+                PainPointEn = "No closed-loop satisfaction check.",
+                PainPointAr = "لا يوجد تأكد من رضا المستفيد بعد الإغلاق.", EmotionScore = 0 },
+
+            new JourneyStage { JourneyId = journeys[2].Id, Sequence = 1, NameEn = "Reminder", NameAr = "تذكير",
+                TouchpointEn = "SMS / email 60 days out", TouchpointAr = "رسالة قبل 60 يوماً",
+                PainPointEn = "No reminder if mobile number is outdated.",
+                PainPointAr = "لا يصل التذكير عند تغيير رقم الجوال.", EmotionScore = 0 },
+            new JourneyStage { JourneyId = journeys[2].Id, Sequence = 2, NameEn = "Payment", NameAr = "السداد",
+                TouchpointEn = "SADAD invoice", TouchpointAr = "فاتورة سداد",
+                PainPointEn = "Double-charge edge case on retried payments.",
+                PainPointAr = "احتمال خصم مزدوج عند إعادة المحاولة.", EmotionScore = -1 },
+            new JourneyStage { JourneyId = journeys[2].Id, Sequence = 3, NameEn = "Certificate issuance", NameAr = "إصدار الشهادة",
+                TouchpointEn = "Portal download", TouchpointAr = "تحميل من البوابة",
+                PainPointEn = "Certificate PDF not Arabic-tagged for screen readers.",
+                PainPointAr = "ملف PDF بدون وسوم عربية للقارئات.", EmotionScore = 1 },
+            new JourneyStage { JourneyId = journeys[2].Id, Sequence = 4, NameEn = "Verification", NameAr = "التحقق",
+                TouchpointEn = "QR code on certificate", TouchpointAr = "رمز QR على الشهادة",
+                PainPointEn = "Third parties don't always trust the QR.",
+                PainPointAr = "جهات خارجية أحياناً لا تثق برمز التحقق.", EmotionScore = 1 },
+
+            new JourneyStage { JourneyId = journeys[3].Id, Sequence = 1, NameEn = "Discover consultation", NameAr = "اكتشاف الاستشارة",
+                TouchpointEn = "Tafa3al portal", TouchpointAr = "بوابة تفاعل",
+                PainPointEn = "Discoverability low without push.",
+                PainPointAr = "اكتشاف ضعيف بدون إشعار.", EmotionScore = 0 },
+            new JourneyStage { JourneyId = journeys[3].Id, Sequence = 2, NameEn = "Submit feedback", NameAr = "إرسال الرأي",
+                TouchpointEn = "Tafa3al form", TouchpointAr = "نموذج تفاعل",
+                PainPointEn = "Form is long; mobile UX rough.",
+                PainPointAr = "النموذج طويل على الجوال.", EmotionScore = -1 },
+            new JourneyStage { JourneyId = journeys[3].Id, Sequence = 3, NameEn = "Outcome feedback", NameAr = "الإفادة بالنتيجة",
+                TouchpointEn = "Public response page", TouchpointAr = "صفحة الردود العامة",
+                PainPointEn = "Citizens don't always receive a closing summary.",
+                PainPointAr = "لا يصل دائماً ملخص ختامي للمشارك.", EmotionScore = 0 }
+        );
+
+        // ── Phase 1: VoC responses (4) ─────────────────────────────────────
+        var nowVoc = DateTime.UtcNow;
+        db.VocResponses.AddRange(
+            new VocResponse { SurveyEn = "Service satisfaction Q1", SurveyAr = "رضا الخدمة — الربع الأول",
+                Channel = "email", NpsScore = 9, Sentiment = "positive",
+                CommentEn = "Smooth experience overall, especially the Nafath sign-in.",
+                CommentAr = "تجربة سلسة عموماً، خصوصاً الدخول عبر نفاذ.",
+                RespondedAt = nowVoc.AddDays(-3), CustomerName = "Khalid Al-Mutairi" },
+            new VocResponse { SurveyEn = "Service satisfaction Q1", SurveyAr = "رضا الخدمة — الربع الأول",
+                Channel = "whatsapp", NpsScore = 4, Sentiment = "negative",
+                CommentEn = "Waited two weeks for the licence renewal, no clear status.",
+                CommentAr = "انتظرت أسبوعين لتجديد الرخصة دون توضيح للحالة.",
+                RespondedAt = nowVoc.AddDays(-1), CustomerName = "Fatima Al-Zahrani" },
+            new VocResponse { SurveyEn = "Branch experience", SurveyAr = "تجربة الفرع",
+                Channel = "branch", NpsScore = 7, Sentiment = "neutral",
+                CommentEn = "Friendly staff but the wait time was long.",
+                CommentAr = "الموظفون متعاونون لكن وقت الانتظار طويل.",
+                RespondedAt = nowVoc.AddHours(-8), CustomerName = "Mohammed Al-Amri" },
+            new VocResponse { SurveyEn = "Portal usability", SurveyAr = "سهولة استخدام البوابة",
+                Channel = "portal", NpsScore = 10, Sentiment = "positive",
+                CommentEn = "The complaint workflow is much clearer now.",
+                CommentAr = "تدفق تقديم الشكوى أوضح بكثير الآن.",
+                RespondedAt = nowVoc.AddHours(-2), CustomerName = "Aisha Al-Dosari" }
+        );
+
+        // ── Phase 1: KB articles (4) ───────────────────────────────────────
+        db.KbArticles.AddRange(
+            new KbArticle { TitleEn = "How to lodge a complaint", TitleAr = "كيفية تقديم شكوى",
+                Category = "complaints", AuthorId = admin.Id, Status = "published",
+                BodyEn = "1) Sign in with Nafath. 2) Open Complaints → New. 3) Pick category. 4) Submit. You will receive a reference number.",
+                BodyAr = "١) سجّل الدخول عبر نفاذ. ٢) افتح الشكاوى ← جديدة. ٣) اختر الفئة. ٤) أرسل. ستصلك رسالة بالرقم المرجعي." },
+            new KbArticle { TitleEn = "Reset your Nafath password", TitleAr = "إعادة تعيين كلمة مرور نفاذ",
+                Category = "identity", AuthorId = admin.Id, Status = "published",
+                BodyEn = "Open the Nafath app, tap 'Forgot password', verify by mobile, set a new password.",
+                BodyAr = "افتح تطبيق نفاذ، اضغط «نسيت كلمة المرور»، تحقق برقم الجوال، ثم أنشئ كلمة مرور جديدة." },
+            new KbArticle { TitleEn = "Renew commercial registry online", TitleAr = "تجديد السجل التجاري إلكترونياً",
+                Category = "services", AuthorId = admin.Id, Status = "published",
+                BodyEn = "Use the Commerce portal: sign in, select your registry, settle the SADAD invoice, download the certificate.",
+                BodyAr = "استخدم بوابة التجارة: سجّل الدخول، اختر السجل، سدد فاتورة سداد، ثم نزّل الشهادة." },
+            new KbArticle { TitleEn = "Understanding closed-loop follow-up", TitleAr = "متابعة الحلقة المغلقة",
+                Category = "voc", AuthorId = admin.Id, Status = "draft",
+                BodyEn = "After a low score we contact the customer within five working days with a remediation plan.",
+                BodyAr = "بعد التقييم المنخفض نتواصل مع المستفيد خلال خمسة أيام عمل لإبلاغه بالخطة." }
+        );
+
+        // ── Phase 1: Programme initiatives (4) ─────────────────────────────
+        db.ProgrammeInitiatives.AddRange(
+            new ProgrammeInitiative {
+                NameEn = "Monafasah+ API integration", NameAr = "تكامل منافسة+ عبر الـ API",
+                Owner = "Fatima Al-Otaibi", RagStatus = "green", ProgressPct = 75,
+                StartDate = DateTime.UtcNow.AddMonths(-3), TargetDate = DateTime.UtcNow.AddMonths(2),
+                Notes = "Phase 0 → 1 wiring complete; production cutover in May." },
+            new ProgrammeInitiative {
+                NameEn = "Closed-loop VoC automation", NameAr = "أتمتة الحلقة المغلقة لصوت المستفيد",
+                Owner = "Layla Al-Qahtani", RagStatus = "amber", ProgressPct = 40,
+                StartDate = DateTime.UtcNow.AddMonths(-2), TargetDate = DateTime.UtcNow.AddMonths(3),
+                Notes = "Templates and routing rules under review with Quality." },
+            new ProgrammeInitiative {
+                NameEn = "Knowledge base bilingual refresh", NameAr = "تحديث قاعدة المعرفة ثنائية اللغة",
+                Owner = "Ahmed Al-Harbi", RagStatus = "green", ProgressPct = 60,
+                StartDate = DateTime.UtcNow.AddMonths(-1), TargetDate = DateTime.UtcNow.AddMonths(1),
+                Notes = "20 of 35 articles translated; reviewers assigned." },
+            new ProgrammeInitiative {
+                NameEn = "Branch wait-time reduction", NameAr = "خفض زمن الانتظار في الفروع",
+                Owner = "Raid Al-Ghamdi", RagStatus = "red", ProgressPct = 15,
+                StartDate = DateTime.UtcNow.AddMonths(-2), TargetDate = DateTime.UtcNow.AddMonths(2),
+                Notes = "Pilot ticketing system rollout slipped — vendor lead-time issue." }
+        );
+
+        // ── Phase 1: Governance bodies + decisions (4 bodies, 4 decisions) ─
+        var bodies = new[]
+        {
+            new GovernanceBody {
+                NameEn = "CX Steering Committee", NameAr = "اللجنة التوجيهية لتجربة المستفيد",
+                Cadence = "monthly", Chair = "Raid Al-Ghamdi",
+                MembersJson = "[\"Raid Al-Ghamdi\",\"Fatima Al-Otaibi\",\"Layla Al-Qahtani\",\"Noor Al Noor\"]",
+                CharterUrl = "https://internal.gac.gov.sa/charters/cx-steering.pdf" },
+            new GovernanceBody {
+                NameEn = "Data & Privacy Council", NameAr = "مجلس البيانات والخصوصية",
+                Cadence = "quarterly", Chair = "Noor Al Noor",
+                MembersJson = "[\"Noor Al Noor\",\"Layla Al-Qahtani\",\"Mohammed Al-Amri\"]",
+                CharterUrl = null },
+            new GovernanceBody {
+                NameEn = "Operations Review Forum", NameAr = "منتدى مراجعة العمليات",
+                Cadence = "biweekly", Chair = "Fatima Al-Otaibi",
+                MembersJson = "[\"Fatima Al-Otaibi\",\"Ahmed Al-Harbi\",\"Aisha Al-Dosari\"]",
+                CharterUrl = null },
+            new GovernanceBody {
+                NameEn = "Customer Council", NameAr = "مجلس المستفيدين",
+                Cadence = "quarterly", Chair = "Layla Al-Qahtani",
+                MembersJson = "[\"Layla Al-Qahtani\",\"Khalid Al-Mutairi\",\"Fatima Al-Zahrani\"]",
+                CharterUrl = null }
+        };
+        db.GovernanceBodies.AddRange(bodies);
+        await db.SaveChangesAsync(ct);
+
+        db.GovernanceDecisions.AddRange(
+            new GovernanceDecision { BodyId = bodies[0].Id,
+                TitleEn = "Approve Monafasah+ rollout plan", TitleAr = "إقرار خطة إطلاق منافسة+",
+                Decision = "Approved with a staged go-live starting May.",
+                OwnerEn = "Fatima Al-Otaibi", OwnerAr = "فاطمة العتيبي",
+                DueDate = DateTime.UtcNow.AddMonths(2), DecidedAt = DateTime.UtcNow.AddDays(-5) },
+            new GovernanceDecision { BodyId = bodies[0].Id,
+                TitleEn = "Lock GAC visual identity for v2", TitleAr = "اعتماد الهوية البصرية للنسخة الثانية",
+                Decision = "Approved gold/navy/blue palette; pill buttons; 10px cards.",
+                OwnerEn = "Noor Al Noor", OwnerAr = "نور النور",
+                DueDate = null, DecidedAt = DateTime.UtcNow.AddDays(-20) },
+            new GovernanceDecision { BodyId = bodies[1].Id,
+                TitleEn = "Adopt PDPL-aligned retention policy", TitleAr = "اعتماد سياسة الاحتفاظ بالبيانات",
+                Decision = "12-month default retention; right-to-be-forgotten workflow in Q3.",
+                OwnerEn = "Noor Al Noor", OwnerAr = "نور النور",
+                DueDate = DateTime.UtcNow.AddMonths(3), DecidedAt = DateTime.UtcNow.AddDays(-30) },
+            new GovernanceDecision { BodyId = bodies[2].Id,
+                TitleEn = "Reduce branch wait-time SLA to 12 minutes", TitleAr = "تقليص مهلة الانتظار في الفروع إلى 12 دقيقة",
+                Decision = "Approved subject to ticketing rollout.",
+                OwnerEn = "Ahmed Al-Harbi", OwnerAr = "أحمد الحربي",
+                DueDate = DateTime.UtcNow.AddMonths(1), DecidedAt = DateTime.UtcNow.AddDays(-2) }
+        );
+
+        await db.SaveChangesAsync(ct);
 
         // ── Genesis audit event ──────────────────────────────────────────────
         var genesisPayload = JsonSerializer.Serialize(new
