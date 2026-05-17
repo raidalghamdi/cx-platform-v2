@@ -76,6 +76,8 @@ public static class Seed
             "/about", "/dashboard", "/journeys", "/voc", "/complaints", "/inbox",
             "/kb", "/copilot", "/portal", "/programme", "/governance",
             "/architecture", "/audit", "/automation", "/admin", "/notifications", "/profile",
+            // Round 5 — maturity-model pages
+            "/accessibility", "/service-health", "/improvement", "/cx-analytics", "/content-governance",
         };
         // matrix[role][page] = allowed. Page-level access is binary (the
         // RolePermission table doesn't model read/write). Controller-level
@@ -88,14 +90,24 @@ public static class Seed
         // non-customer; /portal admin+customer; /copilot all non-customer;
         // /audit admin+supervisor+quality+executive; /automation admin+
         // supervisor+executive.
+        // Round 5 grants (per brief):
+        //   /accessibility       — admin, supervisor, agent, quality, customer (read), executive
+        //   /service-health      — admin, supervisor, agent (read), quality, executive (read)
+        //   /improvement         — admin, supervisor, agent (read), quality, executive
+        //   /cx-analytics        — admin, supervisor, agent (read), quality, executive
+        //   /content-governance  — admin, supervisor, agent, quality, executive (read)
         var matrix = new Dictionary<string, HashSet<string>>
         {
             ["admin"]      = new(pages),
-            ["supervisor"] = new(new[]{"/about","/dashboard","/journeys","/voc","/complaints","/inbox","/kb","/copilot","/programme","/governance","/architecture","/audit","/automation","/notifications","/profile"}),
-            ["agent"]      = new(new[]{"/about","/architecture","/journeys","/complaints","/inbox","/kb","/copilot","/notifications","/profile"}),
-            ["quality"]    = new(new[]{"/about","/architecture","/journeys","/voc","/complaints","/kb","/programme","/governance","/audit","/copilot","/notifications","/profile"}),
-            ["customer"]   = new(new[]{"/about","/portal","/kb","/notifications","/profile"}),
-            ["executive"]  = new(new[]{"/about","/architecture","/dashboard","/journeys","/voc","/kb","/programme","/governance","/audit","/automation","/copilot","/notifications","/profile"}),
+            ["supervisor"] = new(new[]{"/about","/dashboard","/journeys","/voc","/complaints","/inbox","/kb","/copilot","/programme","/governance","/architecture","/audit","/automation","/notifications","/profile",
+                                       "/accessibility","/service-health","/improvement","/cx-analytics","/content-governance"}),
+            ["agent"]      = new(new[]{"/about","/architecture","/journeys","/complaints","/inbox","/kb","/copilot","/notifications","/profile",
+                                       "/accessibility","/service-health","/improvement","/cx-analytics","/content-governance"}),
+            ["quality"]    = new(new[]{"/about","/architecture","/journeys","/voc","/complaints","/kb","/programme","/governance","/audit","/copilot","/notifications","/profile",
+                                       "/accessibility","/service-health","/improvement","/cx-analytics","/content-governance"}),
+            ["customer"]   = new(new[]{"/about","/portal","/kb","/notifications","/profile","/accessibility"}),
+            ["executive"]  = new(new[]{"/about","/architecture","/dashboard","/journeys","/voc","/kb","/programme","/governance","/audit","/automation","/copilot","/notifications","/profile",
+                                       "/accessibility","/service-health","/improvement","/cx-analytics","/content-governance"}),
         };
         foreach (var role in matrix.Keys)
             foreach (var p in pages)
@@ -553,6 +565,371 @@ public static class Seed
                 LatencyMs = 1080, Success = true,
                 CreatedAt = DateTime.UtcNow.AddMinutes(-12) }
         );
+
+        await db.SaveChangesAsync(ct);
+
+        // ──────────────────────────────────────────────────────────────────
+        // Round 5 — maturity-model seed
+        // ──────────────────────────────────────────────────────────────────
+        var nowR5 = DateTime.UtcNow;
+        var today = nowR5.Date;
+        var rng = new Random(20260517);                            // deterministic demo data
+
+        // Gap 1 — Accessibility audit + 12 remediation items
+        var audit = new AccessibilityAuditEntry
+        {
+            AuditDate = today.AddDays(-21),
+            Auditor = "Layla Al-Qahtani",
+            ScopePagesJson = JsonSerializer.Serialize(new[] {
+                "/dashboard", "/complaints", "/inbox", "/portal", "/kb", "/landing"
+            }),
+            WcagLevel = WcagLevel.AA,
+            TotalIssues = 12, OpenIssues = 3,
+            ReportUrl = "https://internal.gac.gov.sa/audits/2026-04-wcag-aa.pdf",
+            Notes = "Quarterly WCAG 2.2 AA review across the customer-facing pages.",
+        };
+        db.AccessibilityAudits.Add(audit);
+        await db.SaveChangesAsync(ct);
+
+        var remediationData = new (string Crit, AccessibilitySeverity Sev, string En, string Ar, AccessibilityItemStatus St, int? DueDays)[]
+        {
+            ("1.4.3",  AccessibilitySeverity.High,     "Text contrast on muted captions below 4.5:1.",                              "تباين نص الشروحات الخفيفة أقل من 4.5:1.",                                 AccessibilityItemStatus.Resolved,   -10),
+            ("1.4.11", AccessibilitySeverity.Medium,   "Pill button border vs background ratio 2.7:1 — needs 3:1.",                 "حد أزرار pill مقابل الخلفية 2.7:1 — المطلوب 3:1.",                         AccessibilityItemStatus.Resolved,    -5),
+            ("2.1.1",  AccessibilitySeverity.High,     "Inbox drawer not fully keyboard-reachable when RTL is active.",             "اللوحة الجانبية للصندوق لا يمكن الوصول إليها بالكامل بلوحة المفاتيح في وضع RTL.", AccessibilityItemStatus.Resolved,    -3),
+            ("2.4.7",  AccessibilitySeverity.Medium,   "Focus ring lost on gold pill buttons when pressed.",                        "اختفاء حلقة التركيز من أزرار pill الذهبية عند الضغط.",                       AccessibilityItemStatus.Resolved,    -1),
+            ("2.5.8",  AccessibilitySeverity.Medium,   "Toast dismiss target smaller than 24×24 CSS pixels.",                       "هدف إغلاق التوست أصغر من 24×24 بكسل CSS.",                                  AccessibilityItemStatus.Resolved,    -2),
+            ("3.1.2",  AccessibilitySeverity.Low,      "Mixed-language tooltips missing lang attribute on Arabic spans.",           "تلميحات ثنائية اللغة بدون سمة lang على فقرات العربية.",                      AccessibilityItemStatus.Resolved,    -7),
+            ("4.1.2",  AccessibilitySeverity.Medium,   "Status badge announced only as text — needs aria-label including state.",   "شارة الحالة تُعلَن كنص فقط — تحتاج aria-label يشمل الحالة.",                  AccessibilityItemStatus.Resolved,    -4),
+            ("4.1.3",  AccessibilitySeverity.Medium,   "Toast not announced to assistive tech.",                                    "التوست لا يُعلَن للتقنيات المساعدة.",                                        AccessibilityItemStatus.Resolved,     0),
+            ("1.3.1",  AccessibilitySeverity.Low,      "Tables missing scope attribute on header cells.",                            "خلايا رأس الجداول تفتقد سمة scope.",                                       AccessibilityItemStatus.Resolved,    -1),
+            ("1.1.1",  AccessibilitySeverity.Medium,   "Architecture SVG missing accessible name.",                                  "رسم البنية بصيغة SVG بلا اسم متاح.",                                        AccessibilityItemStatus.Open,        14),
+            ("2.4.7",  AccessibilitySeverity.High,     "Skip-to-content link not visible on focus in RTL mode.",                     "رابط القفز إلى المحتوى غير ظاهر عند التركيز في وضع RTL.",                    AccessibilityItemStatus.InProgress,  10),
+            ("3.3.7",  AccessibilitySeverity.Low,      "New-complaint form re-asks the customer's national ID.",                     "نموذج الشكوى الجديدة يطلب رقم الهوية مجدداً.",                                AccessibilityItemStatus.Open,        30),
+        };
+        foreach (var r in remediationData)
+        {
+            db.AccessibilityRemediations.Add(new AccessibilityRemediationItem
+            {
+                AuditId = audit.Id,
+                WcagCriterion = r.Crit, Severity = r.Sev,
+                DescriptionEn = r.En, DescriptionAr = r.Ar,
+                Owner = "Layla Al-Qahtani",
+                Status = r.St,
+                TargetDate = r.DueDays is null ? null : today.AddDays(r.DueDays.Value),
+                ResolvedDate = r.St == AccessibilityItemStatus.Resolved
+                    ? today.AddDays(r.DueDays ?? -1) : null,
+            });
+        }
+        await db.SaveChangesAsync(ct);
+
+        // Gap 2 — 30 days of service-health metrics across 8 services
+        string[] services = { "Auth", "Complaints", "Inbox", "Dashboard", "Portal", "Copilot", "Audit", "KB" };
+        for (int day = 30; day >= 1; day--)
+        {
+            var ts = today.AddDays(-day).AddHours(12);
+            foreach (var svc in services)
+            {
+                // Uptime 99.60–99.95, latency 80–450 ms, error rate 0.10–2.30 %
+                var uptime = 99.60m + (decimal)(rng.NextDouble() * 0.35);
+                var p95 = 80 + rng.Next(0, 371);
+                var err = 0.10m + (decimal)(rng.NextDouble() * 2.20);
+                var mttr = 5 + rng.Next(0, 36);
+                var reqs = 1500 + rng.Next(0, 8500);
+                db.ServiceHealthMetrics.Add(new ServiceHealthMetric
+                {
+                    ServiceName = svc, MeasuredAt = ts,
+                    UptimePct = Math.Round(uptime, 4),
+                    P95LatencyMs = p95,
+                    ErrorRatePct = Math.Round(err, 4),
+                    MttrMinutes = mttr, RequestCount = reqs,
+                });
+            }
+        }
+
+        // 3 incidents with realistic timelines
+        db.ServiceIncidents.AddRange(
+            new ServiceIncident
+            {
+                ServiceName = "Inbox",
+                OpenedAt = today.AddDays(-12).AddHours(9).AddMinutes(14),
+                ResolvedAt = today.AddDays(-12).AddHours(11).AddMinutes(2),
+                Severity = IncidentSeverity.Sev2, Status = IncidentStatus.Resolved,
+                TitleEn = "WhatsApp adapter degraded — 30% reply timeouts.",
+                TitleAr = "تدنّي أداء واتساب — 30% من الردود تجاوزت المهلة.",
+                RootCauseEn = "Upstream WhatsApp Business API rate-limit reduction not picked up by retry policy.",
+                RootCauseAr = "خفض غير معلن لحدّ معدّل الطلبات في واجهة WhatsApp Business لم تلتقطه سياسة إعادة المحاولة.",
+                RemediationEn = "Backed off retries and lifted into a circuit breaker; vendor confirmed limits.",
+                RemediationAr = "تخفيف إعادة المحاولات وتغليفها بقاطع دائرة؛ تأكيد الحدود من المزوّد.",
+            },
+            new ServiceIncident
+            {
+                ServiceName = "Audit",
+                OpenedAt = today.AddDays(-2).AddHours(7).AddMinutes(48),
+                ResolvedAt = null,
+                Severity = IncidentSeverity.Sev3, Status = IncidentStatus.Mitigating,
+                TitleEn = "Audit verify endpoint p95 elevated under burst.",
+                TitleAr = "ارتفاع p95 لنقطة التحقق من السجل تحت ضغط متفجّر.",
+                RootCauseEn = "Full-table chain replay scales linearly; verify under load needs incremental verifier.",
+                RootCauseAr = "إعادة بناء السلسلة الكاملة خطيّ النمو؛ يلزم محقّق تدريجي تحت الحمل.",
+                RemediationEn = "Subagent 2 will add incremental verifier with cached tail offset.",
+                RemediationAr = "ستضيف الموجة الثانية محقّقاً تدريجياً مع موقع إزاحة مخزّن.",
+            },
+            new ServiceIncident
+            {
+                ServiceName = "KB",
+                OpenedAt = today.AddDays(-27).AddHours(15).AddMinutes(0),
+                ResolvedAt = today.AddDays(-27).AddHours(15).AddMinutes(38),
+                Severity = IncidentSeverity.Sev4, Status = IncidentStatus.Resolved,
+                TitleEn = "KB search returned stale cache after publish.",
+                TitleAr = "بحث قاعدة المعرفة عرض ذاكرة قديمة بعد النشر.",
+                RootCauseEn = "Cache eviction on publish missed a tag.",
+                RootCauseAr = "فاتت عملية إخلاء الذاكرة عند النشر إحدى الوسوم.",
+                RemediationEn = "Tag-set extended to include category.",
+                RemediationAr = "توسيع مجموعة الوسوم لتشمل الفئة.",
+            }
+        );
+
+        // 6 synthetic checks (all enabled). LastRunAt/Latency are placeholders
+        // until Subagent 2's BackgroundService starts overwriting them.
+        var checkDefs = new (string Name, string Endpoint, int Interval, int Latency, CheckStatus Status)[]
+        {
+            ("Auth login",         "/api/v1/auth/login",          60, 142, CheckStatus.Pass),
+            ("Complaints list",    "/api/v1/complaints",          60, 198, CheckStatus.Pass),
+            ("Inbox threads",      "/api/v1/inbox/threads",       60, 221, CheckStatus.Pass),
+            ("Dashboard KPIs",     "/api/v1/kpis",                60, 117, CheckStatus.Pass),
+            ("Portal my-requests", "/api/v1/portal/my-requests", 120, 167, CheckStatus.Pass),
+            ("Audit verify",       "/api/v1/audit/verify",       300, 612, CheckStatus.Pass),
+        };
+        foreach (var c in checkDefs)
+        {
+            db.SyntheticChecks.Add(new SyntheticCheck
+            {
+                Name = c.Name, Endpoint = c.Endpoint,
+                IntervalSeconds = c.Interval,
+                LastRunAt = nowR5.AddMinutes(-(rng.Next(0, c.Interval / 60 + 1))),
+                LastStatus = c.Status, LastLatencyMs = c.Latency, Enabled = true,
+            });
+        }
+
+        // Gap 3 — KPI thresholds tied to existing seeded KPIs
+        var kpiRows = await db.Kpis.Where(k => new[] { "csat", "nps", "fcr", "sla", "response_time" }.Contains(k.Key))
+            .ToDictionaryAsync(k => k.Key, ct);
+        if (kpiRows.TryGetValue("csat", out var csatKpi))
+            db.KpiThresholds.Add(new KpiThreshold { KpiId = csatKpi.Id, ThresholdValue = 80m, ComparisonOp = ThresholdComparison.LessThan, BreachAction = ThresholdBreachAction.Both, Enabled = true });
+        if (kpiRows.TryGetValue("nps", out var npsKpi))
+            db.KpiThresholds.Add(new KpiThreshold { KpiId = npsKpi.Id, ThresholdValue = 30m, ComparisonOp = ThresholdComparison.LessThan, BreachAction = ThresholdBreachAction.Both, Enabled = true });
+        if (kpiRows.TryGetValue("fcr", out var fcrKpi))
+            db.KpiThresholds.Add(new KpiThreshold { KpiId = fcrKpi.Id, ThresholdValue = 65m, ComparisonOp = ThresholdComparison.LessThan, BreachAction = ThresholdBreachAction.CreateImprovementItem, Enabled = true });
+        if (kpiRows.TryGetValue("sla", out var slaKpi))
+            db.KpiThresholds.Add(new KpiThreshold { KpiId = slaKpi.Id, ThresholdValue = 90m, ComparisonOp = ThresholdComparison.LessThan, BreachAction = ThresholdBreachAction.Both, Enabled = true });
+        if (kpiRows.TryGetValue("response_time", out var rtKpi))
+            db.KpiThresholds.Add(new KpiThreshold { KpiId = rtKpi.Id, ThresholdValue = 3m, ComparisonOp = ThresholdComparison.GreaterThan, BreachAction = ThresholdBreachAction.NotifyOnly, Enabled = true });
+
+        // 8 ImprovementItems across the PDCA stages
+        var improvements = new[]
+        {
+            new ImprovementItem { SourceType = ImprovementSource.KpiBreach, TitleEn = "Lift CSAT above 90 for branch journey", TitleAr = "رفع رضا المستفيد فوق 90 لرحلة الفرع",
+                DescriptionEn = "CSAT for branch experience dipped below the 80 threshold last quarter; root-cause analysis points to wait time.",
+                DescriptionAr = "تراجع رضا تجربة الفرع تحت عتبة 80 الربع الماضي؛ تشير الأسباب إلى وقت الانتظار.",
+                Owner = "Fatima Al-Otaibi", Priority = ImprovementPriority.High, PdcaStage = PdcaStage.Plan,
+                TargetDate = today.AddMonths(2), CreatedAt = today.AddDays(-9) },
+            new ImprovementItem { SourceType = ImprovementSource.AccessibilityAudit, SourceRefId = audit.Id,
+                TitleEn = "Fix RTL skip-link visibility (WCAG 2.4.7)", TitleAr = "تصحيح ظهور رابط القفز في وضع RTL (WCAG 2.4.7)",
+                DescriptionEn = "Skip-to-content not visible on focus in RTL.",
+                DescriptionAr = "رابط القفز إلى المحتوى غير ظاهر عند التركيز في وضع RTL.",
+                Owner = "Ahmed Al-Harbi", Priority = ImprovementPriority.High, PdcaStage = PdcaStage.Plan,
+                TargetDate = today.AddDays(14), CreatedAt = today.AddDays(-6) },
+            new ImprovementItem { SourceType = ImprovementSource.Manual,
+                TitleEn = "Reduce inbox p95 latency under burst", TitleAr = "خفض p95 لزمن الصندوق تحت الضغط",
+                DescriptionEn = "Add adaptive concurrency to channel adapters.",
+                DescriptionAr = "إضافة تحكّم تكيّفي بعدد الطلبات لمحولات القنوات.",
+                Owner = "Fatima Al-Otaibi", Priority = ImprovementPriority.Medium, PdcaStage = PdcaStage.Do,
+                TargetDate = today.AddMonths(1), CreatedAt = today.AddDays(-18) },
+            new ImprovementItem { SourceType = ImprovementSource.ContentReview,
+                TitleEn = "Refresh top-10 KB articles", TitleAr = "تحديث أعلى 10 مقالات بقاعدة المعرفة",
+                DescriptionEn = "Bring freshness scores above 75 across the most-viewed articles.",
+                DescriptionAr = "رفع درجة الحداثة فوق 75 لأكثر المقالات قراءة.",
+                Owner = "Layla Al-Qahtani", Priority = ImprovementPriority.Medium, PdcaStage = PdcaStage.Do,
+                TargetDate = today.AddMonths(1), CreatedAt = today.AddDays(-14) },
+            new ImprovementItem { SourceType = ImprovementSource.KpiBreach,
+                TitleEn = "Stabilise SLA compliance week-over-week", TitleAr = "تثبيت الالتزام بمستوى الخدمة أسبوعياً",
+                DescriptionEn = "Trend dipped 0.6 points; check payment-related routing.",
+                DescriptionAr = "تراجع الاتجاه 0.6 نقطة؛ مراجعة توجيه الشكاوى المتعلقة بالمدفوعات.",
+                Owner = "Raid Al-Ghamdi", Priority = ImprovementPriority.High, PdcaStage = PdcaStage.Check,
+                TargetDate = today.AddDays(20), CreatedAt = today.AddDays(-25) },
+            new ImprovementItem { SourceType = ImprovementSource.Manual,
+                TitleEn = "Roll out copilot draft-reply across agent inbox", TitleAr = "تعميم اقتراح الردود من المساعد على صندوق الموظفين",
+                DescriptionEn = "After successful pilot, expand to all agents and measure CSAT delta.",
+                DescriptionAr = "بعد نجاح التجربة، التعميم على جميع الموظفين وقياس فرق رضا المستفيد.",
+                Owner = "Noor Al Noor", Priority = ImprovementPriority.Medium, PdcaStage = PdcaStage.Act,
+                TargetDate = today.AddDays(7), CreatedAt = today.AddDays(-40) },
+            new ImprovementItem { SourceType = ImprovementSource.AccessibilityAudit, SourceRefId = audit.Id,
+                TitleEn = "Improve focus-ring contrast on gold pill buttons", TitleAr = "تحسين تباين حلقة التركيز لأزرار pill الذهبية",
+                DescriptionEn = "Ring color updated to navy-700, ratio raised to 4.8:1.",
+                DescriptionAr = "تعديل لون الحلقة إلى navy-700 ورفع التباين إلى 4.8:1.",
+                Owner = "Ahmed Al-Harbi", Priority = ImprovementPriority.Medium, PdcaStage = PdcaStage.Closed,
+                TargetDate = today.AddDays(-10), ClosedAt = today.AddDays(-5), CreatedAt = today.AddDays(-30) },
+            new ImprovementItem { SourceType = ImprovementSource.Manual,
+                TitleEn = "Document incident response runbook for inbox adapters", TitleAr = "توثيق دليل الاستجابة لحوادث محولات الصندوق",
+                DescriptionEn = "After the Sev2 WhatsApp incident, codify the steps.",
+                DescriptionAr = "بعد حادثة WhatsApp من المستوى الثاني، توحيد الخطوات.",
+                Owner = "Fatima Al-Otaibi", Priority = ImprovementPriority.Low, PdcaStage = PdcaStage.Closed,
+                TargetDate = today.AddDays(-2), ClosedAt = today.AddDays(-1), CreatedAt = today.AddDays(-22) },
+        };
+        db.ImprovementItems.AddRange(improvements);
+        await db.SaveChangesAsync(ct);
+
+        // PDCA log entries for items that have transitioned at least once
+        db.PdcaCycleLogs.AddRange(
+            new PdcaCycleLog { ImprovementItemId = improvements[2].Id, FromStage = PdcaStage.Plan, ToStage = PdcaStage.Do,
+                ActorUserId = supervisor.Id, ChangedAt = today.AddDays(-14),
+                NotesEn = "Scoped the work, kicked off implementation.", NotesAr = "تم تحديد النطاق وبدء التنفيذ." },
+            new PdcaCycleLog { ImprovementItemId = improvements[3].Id, FromStage = PdcaStage.Plan, ToStage = PdcaStage.Do,
+                ActorUserId = quality.Id, ChangedAt = today.AddDays(-10),
+                NotesEn = "Article batch assigned to reviewers.", NotesAr = "تم إسناد دفعة المقالات إلى المراجعين." },
+            new PdcaCycleLog { ImprovementItemId = improvements[4].Id, FromStage = PdcaStage.Plan, ToStage = PdcaStage.Do,
+                ActorUserId = executive.Id, ChangedAt = today.AddDays(-20),
+                NotesEn = "Hypothesis: payment routing.", NotesAr = "الفرضية: توجيه الشكاوى المتعلقة بالمدفوعات." },
+            new PdcaCycleLog { ImprovementItemId = improvements[4].Id, FromStage = PdcaStage.Do, ToStage = PdcaStage.Check,
+                ActorUserId = executive.Id, ChangedAt = today.AddDays(-7),
+                NotesEn = "Measuring 14-day window.", NotesAr = "قياس نافذة 14 يوماً." },
+            new PdcaCycleLog { ImprovementItemId = improvements[5].Id, FromStage = PdcaStage.Check, ToStage = PdcaStage.Act,
+                ActorUserId = admin.Id, ChangedAt = today.AddDays(-3),
+                NotesEn = "Pilot succeeded — rolling out to all agents.", NotesAr = "نجحت التجربة — التعميم على جميع الموظفين." },
+            new PdcaCycleLog { ImprovementItemId = improvements[6].Id, FromStage = PdcaStage.Act, ToStage = PdcaStage.Closed,
+                ActorUserId = admin.Id, ChangedAt = today.AddDays(-5),
+                NotesEn = "Closed — measured contrast ratio at 4.8:1.", NotesAr = "تم الإغلاق — قياس التباين 4.8:1." },
+            new PdcaCycleLog { ImprovementItemId = improvements[7].Id, FromStage = PdcaStage.Act, ToStage = PdcaStage.Closed,
+                ActorUserId = supervisor.Id, ChangedAt = today.AddDays(-1),
+                NotesEn = "Runbook published.", NotesAr = "تم نشر دليل الاستجابة." }
+        );
+
+        // Gap 4 — 90 days of CxAnalyticsSnapshot for segment=All + 30 days × 3 segments
+        for (int day = 89; day >= 0; day--)
+        {
+            var d = today.AddDays(-day);
+            var csat = 82m + (decimal)(rng.NextDouble() * 8.5);
+            var nps  = 28m + (decimal)(rng.NextDouble() * 22);
+            var ces  = 2.3m + (decimal)(rng.NextDouble() * 1.6);
+            var volume = 18 + rng.Next(0, 17);
+            var p95Hours = 6m + (decimal)(rng.NextDouble() * 18);
+            db.CxAnalyticsSnapshots.Add(new CxAnalyticsSnapshot
+            {
+                SnapshotDate = d, Segment = "All",
+                Csat = Math.Round(csat, 3), Nps = Math.Round(nps, 3),
+                Ces = Math.Round(ces, 3), ComplaintVolume = volume,
+                ResolutionRateP95Hours = Math.Round(p95Hours, 2),
+            });
+        }
+        string[] segments = { "NewCustomer", "Returning", "VIP" };
+        foreach (var seg in segments)
+        {
+            for (int day = 29; day >= 0; day--)
+            {
+                var d = today.AddDays(-day);
+                // Slightly different baselines per segment for visual variety in the trend chart.
+                var bumpCsat = seg == "VIP" ? 4m : seg == "NewCustomer" ? -2m : 0m;
+                var bumpNps  = seg == "VIP" ? 9m : seg == "NewCustomer" ? -4m : 0m;
+                db.CxAnalyticsSnapshots.Add(new CxAnalyticsSnapshot
+                {
+                    SnapshotDate = d, Segment = seg,
+                    Csat = Math.Round(80m + bumpCsat + (decimal)(rng.NextDouble() * 8), 3),
+                    Nps  = Math.Round(26m + bumpNps  + (decimal)(rng.NextDouble() * 20), 3),
+                    Ces  = Math.Round(2.5m + (decimal)(rng.NextDouble() * 1.5), 3),
+                    ComplaintVolume = 6 + rng.Next(0, 12),
+                    ResolutionRateP95Hours = Math.Round(7m + (decimal)(rng.NextDouble() * 16), 2),
+                });
+            }
+        }
+
+        // 6 RootCauseLinks linking VoC → Complaint → ImprovementItem.
+        // We tie back to seeded VoC/complaint IDs by fetching by content.
+        var vocIds = await db.VocResponses.OrderBy(v => v.Id).Select(v => v.Id).Take(4).ToListAsync(ct);
+        var complaintIds = await db.Complaints.OrderBy(c => c.Id).Select(c => c.Id).Take(4).ToListAsync(ct);
+        for (int i = 0; i < Math.Min(vocIds.Count, complaintIds.Count); i++)
+        {
+            db.RootCauseLinks.Add(new RootCauseLink
+            {
+                FromType = "VocResponse", FromRefId = vocIds[i],
+                ToType = "Complaint", ToRefId = complaintIds[i],
+                LinkStrength = (decimal)(0.55 + rng.NextDouble() * 0.4),
+                Notes = "Pattern surfaced by VoC sentiment + complaint category.",
+            });
+        }
+        // Two links Complaint → ImprovementItem
+        for (int i = 0; i < Math.Min(2, complaintIds.Count); i++)
+        {
+            db.RootCauseLinks.Add(new RootCauseLink
+            {
+                FromType = "Complaint", FromRefId = complaintIds[i],
+                ToType = "ImprovementItem", ToRefId = improvements[i % improvements.Length].Id,
+                LinkStrength = (decimal)(0.6 + rng.NextDouble() * 0.35),
+                Notes = "Complaint pattern routed into a PDCA item.",
+            });
+        }
+
+        // Gap 5 — 8 ContentReviewCycles across seeded KB articles
+        var kbIds = await db.KbArticles.OrderBy(a => a.Id).Select(a => a.Id).ToListAsync(ct);
+        var cycleData = new (int Idx, int DueOffset, ContentReviewStatus St, int Fresh, bool Parity)[]
+        {
+            (0, -10, ContentReviewStatus.Approved,  92, true),
+            (1,  -3, ContentReviewStatus.Approved,  85, true),
+            (2,  14, ContentReviewStatus.Pending,   70, true),
+            (3, -20, ContentReviewStatus.Rejected,  48, false),
+            (0,  45, ContentReviewStatus.Pending,   78, true),
+            (1, -45, ContentReviewStatus.Approved,  95, true),
+            (2,  -8, ContentReviewStatus.InReview,  55, true),
+            (3,  -1, ContentReviewStatus.InReview,  35, false),
+        };
+        foreach (var c in cycleData)
+        {
+            if (c.Idx >= kbIds.Count) continue;
+            db.ContentReviewCycles.Add(new ContentReviewCycle
+            {
+                KbArticleId = kbIds[c.Idx],
+                DueDate = today.AddDays(c.DueOffset),
+                AssignedReviewer = c.Idx % 2 == 0 ? "Layla Al-Qahtani" : "Fatima Al-Otaibi",
+                Status = c.St,
+                CompletedAt = c.St is ContentReviewStatus.Approved or ContentReviewStatus.Rejected
+                    ? today.AddDays(c.DueOffset - 1) : null,
+                FreshnessScore = c.Fresh, EnArParityFlag = c.Parity,
+                Notes = c.Parity ? "Routine quarterly review." : "EN/AR parity broken — translation gap flagged.",
+            });
+        }
+
+        // 30 days × 5 channels of ChannelPerformanceMetric
+        string[] channels = { "Email", "WhatsApp", "Chat", "Portal", "Phone" };
+        foreach (var ch in channels)
+        {
+            for (int day = 29; day >= 0; day--)
+            {
+                var d = today.AddDays(-day);
+                var vol = ch switch {
+                    "Email"    => 120 + rng.Next(0, 70),
+                    "WhatsApp" => 180 + rng.Next(0, 90),
+                    "Chat"     =>  80 + rng.Next(0, 50),
+                    "Portal"   =>  60 + rng.Next(0, 40),
+                    _          =>  45 + rng.Next(0, 30),
+                };
+                var avgMin = ch switch {
+                    "Email"    => 36m + (decimal)(rng.NextDouble() * 14),
+                    "WhatsApp" =>  8m + (decimal)(rng.NextDouble() * 6),
+                    "Chat"     =>  3m + (decimal)(rng.NextDouble() * 3),
+                    "Portal"   => 14m + (decimal)(rng.NextDouble() * 8),
+                    _          =>  5m + (decimal)(rng.NextDouble() * 4),
+                };
+                var resPct = 70m + (decimal)(rng.NextDouble() * 25);
+                var csatCh = 80m + (decimal)(rng.NextDouble() * 12);
+                db.ChannelPerformanceMetrics.Add(new ChannelPerformanceMetric
+                {
+                    Channel = ch, MeasuredAt = d,
+                    VolumeCount = vol,
+                    AvgResponseMinutes = Math.Round(avgMin, 2),
+                    ResolutionRatePct = Math.Round(resPct, 3),
+                    CsatScore = Math.Round(csatCh, 3),
+                });
+            }
+        }
 
         await db.SaveChangesAsync(ct);
 

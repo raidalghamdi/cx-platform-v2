@@ -290,3 +290,154 @@ public class PortalRequest : EntityBase
     public string BodyAr { get; set; } = "";
     public string Status { get; set; } = "new";      // new / in_progress / resolved / closed
 }
+
+// ── Round 5 — Gap 1: Digital accessibility ─────────────────────────────────
+
+public class AccessibilityAuditEntry : EntityBase
+{
+    public DateTime AuditDate { get; set; } = DateTime.UtcNow;
+    public string Auditor { get; set; } = "";
+    public string ScopePagesJson { get; set; } = "[]";   // JSON array of page paths/labels
+    public WcagLevel WcagLevel { get; set; } = WcagLevel.AA;
+    public int TotalIssues { get; set; }
+    public int OpenIssues { get; set; }
+    public string? ReportUrl { get; set; }
+    public string Notes { get; set; } = "";
+}
+
+public class AccessibilityRemediationItem : EntityBase
+{
+    public long AuditId { get; set; }                    // FK → AccessibilityAuditEntry
+    public string WcagCriterion { get; set; } = "";      // e.g. "1.4.3 Contrast (Minimum)"
+    public AccessibilitySeverity Severity { get; set; } = AccessibilitySeverity.Medium;
+    public string DescriptionEn { get; set; } = "";
+    public string DescriptionAr { get; set; } = "";
+    public string Owner { get; set; } = "";
+    public AccessibilityItemStatus Status { get; set; } = AccessibilityItemStatus.Open;
+    public DateTime? TargetDate { get; set; }
+    public DateTime? ResolvedDate { get; set; }
+}
+
+// ── Round 5 — Gap 2: Service health & stability ────────────────────────────
+
+public class ServiceHealthMetric : EntityBase
+{
+    public string ServiceName { get; set; } = "";        // Auth / Complaints / Inbox / ...
+    public DateTime MeasuredAt { get; set; } = DateTime.UtcNow;
+    public decimal UptimePct { get; set; }               // 0-100
+    public int P95LatencyMs { get; set; }
+    public decimal ErrorRatePct { get; set; }
+    public int MttrMinutes { get; set; }
+    public int RequestCount { get; set; }
+}
+
+public class ServiceIncident : EntityBase
+{
+    public string ServiceName { get; set; } = "";
+    public DateTime OpenedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ResolvedAt { get; set; }
+    public IncidentSeverity Severity { get; set; } = IncidentSeverity.Sev3;
+    public string TitleEn { get; set; } = "";
+    public string TitleAr { get; set; } = "";
+    public string RootCauseEn { get; set; } = "";
+    public string RootCauseAr { get; set; } = "";
+    public string RemediationEn { get; set; } = "";
+    public string RemediationAr { get; set; } = "";
+    public IncidentStatus Status { get; set; } = IncidentStatus.Open;
+}
+
+public class SyntheticCheck : EntityBase
+{
+    public string Name { get; set; } = "";
+    public string Endpoint { get; set; } = "";
+    public int IntervalSeconds { get; set; } = 60;
+    public DateTime? LastRunAt { get; set; }
+    public CheckStatus LastStatus { get; set; } = CheckStatus.Pass;
+    public int LastLatencyMs { get; set; }
+    public bool Enabled { get; set; } = true;
+}
+
+// ── Round 5 — Gap 3: KPI-driven continuous improvement ─────────────────────
+
+public class KpiThreshold : EntityBase
+{
+    public long KpiId { get; set; }                      // FK → Kpi
+    public decimal ThresholdValue { get; set; }
+    public ThresholdComparison ComparisonOp { get; set; } = ThresholdComparison.LessThan;
+    public ThresholdBreachAction BreachAction { get; set; } = ThresholdBreachAction.Both;
+    public bool Enabled { get; set; } = true;
+}
+
+public class ImprovementItem : EntityBase
+{
+    public ImprovementSource SourceType { get; set; } = ImprovementSource.Manual;
+    public long? SourceRefId { get; set; }               // points back to KpiThreshold / AuditId / etc.
+    public string TitleEn { get; set; } = "";
+    public string TitleAr { get; set; } = "";
+    public string DescriptionEn { get; set; } = "";
+    public string DescriptionAr { get; set; } = "";
+    public string Owner { get; set; } = "";
+    public ImprovementPriority Priority { get; set; } = ImprovementPriority.Medium;
+    public PdcaStage PdcaStage { get; set; } = PdcaStage.Plan;
+    public DateTime? TargetDate { get; set; }
+    public DateTime? ClosedAt { get; set; }
+}
+
+public class PdcaCycleLog : EntityBase
+{
+    public long ImprovementItemId { get; set; }
+    public PdcaStage FromStage { get; set; }
+    public PdcaStage ToStage { get; set; }
+    public long? ActorUserId { get; set; }
+    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+    public string NotesEn { get; set; } = "";
+    public string NotesAr { get; set; } = "";
+}
+
+// ── Round 5 — Gap 4: CX KPI analytics & root-cause links ───────────────────
+
+public class CxAnalyticsSnapshot : EntityBase
+{
+    public DateTime SnapshotDate { get; set; } = DateTime.UtcNow.Date;
+    public decimal Csat { get; set; }
+    public decimal Nps { get; set; }
+    public decimal Ces { get; set; }
+    public int ComplaintVolume { get; set; }
+    public decimal ResolutionRateP95Hours { get; set; }
+    public long? JourneyId { get; set; }                 // FK nullable → Journey
+    public string Segment { get; set; } = "All";          // All / NewCustomer / Returning / VIP
+}
+
+public class RootCauseLink : EntityBase
+{
+    public string FromType { get; set; } = "";           // VocResponse / Complaint / JourneyStage
+    public long FromRefId { get; set; }
+    public string ToType { get; set; } = "";             // Complaint / JourneyStage / ImprovementItem
+    public long ToRefId { get; set; }
+    public decimal LinkStrength { get; set; }            // 0..1
+    public string Notes { get; set; } = "";
+}
+
+// ── Round 5 — Gap 5: Content & channels governance ─────────────────────────
+
+public class ContentReviewCycle : EntityBase
+{
+    public long KbArticleId { get; set; }                // FK → KbArticle
+    public DateTime DueDate { get; set; } = DateTime.UtcNow.AddMonths(3);
+    public string AssignedReviewer { get; set; } = "";
+    public ContentReviewStatus Status { get; set; } = ContentReviewStatus.Pending;
+    public DateTime? CompletedAt { get; set; }
+    public int FreshnessScore { get; set; }              // 0..100 — recalculated by ContentFreshnessService
+    public bool EnArParityFlag { get; set; } = true;     // true = EN/AR balanced
+    public string Notes { get; set; } = "";
+}
+
+public class ChannelPerformanceMetric : EntityBase
+{
+    public string Channel { get; set; } = "";            // Email / WhatsApp / Chat / Portal / Phone
+    public DateTime MeasuredAt { get; set; } = DateTime.UtcNow.Date;
+    public int VolumeCount { get; set; }
+    public decimal AvgResponseMinutes { get; set; }
+    public decimal ResolutionRatePct { get; set; }
+    public decimal CsatScore { get; set; }
+}

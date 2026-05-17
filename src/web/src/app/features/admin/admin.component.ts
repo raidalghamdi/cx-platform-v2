@@ -13,6 +13,8 @@ const PAGES = [
   '/about', '/dashboard', '/journeys', '/voc', '/complaints', '/inbox', '/kb',
   '/copilot', '/portal', '/programme', '/governance', '/architecture',
   '/audit', '/automation', '/admin', '/notifications', '/profile',
+  // Round 5 — maturity-model pages
+  '/accessibility', '/service-health', '/improvement', '/cx-analytics', '/content-governance',
 ];
 
 @Component({

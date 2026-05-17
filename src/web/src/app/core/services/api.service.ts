@@ -12,6 +12,15 @@ import {
   AskCopilotRequest, CopilotInteractionDto,
   AuditPageDto, AuditVerifyResultDto,
   AutomationRuleDto, AutomationRunResultDto,
+  // Round 5 — maturity model
+  AccessibilityAuditDto, AccessibilityAuditDetailDto, AccessibilityRemediationDto,
+  WcagCriterionDto, UpdateAccessibilityRemediationRequest,
+  ServiceHealthMetricDto, ServiceIncidentDto, SyntheticCheckDto,
+  ImprovementItemDto, ImprovementItemDetailDto, CreateImprovementItemRequest, TransitionPdcaRequest,
+  KpiThresholdDto, UpdateKpiThresholdRequest,
+  CxAnalyticsSnapshotDto, CxAnalyticsTrendDto, RootCauseLinkDto, CreateRootCauseLinkRequest,
+  ContentReviewCycleDto, CreateContentReviewCycleRequest, UpdateContentReviewCycleRequest,
+  ChannelPerformanceMetricDto, StaleArticleDto,
 } from '../models/types';
 import { environment } from '../../../environments/environment';
 
@@ -197,5 +206,103 @@ export class ApiService {
   }
   automationRun(id: number) {
     return firstValueFrom(this.http.post<AutomationRunResultDto>(`${this.base}/automation/rules/${id}/run`, {}));
+  }
+
+  // ── Round 5 — Accessibility ─────────────────────────────────────────────
+  a11yAudits() {
+    return firstValueFrom(this.http.get<AccessibilityAuditDto[]>(`${this.base}/accessibility/audits`));
+  }
+  a11yAudit(id: number) {
+    return firstValueFrom(this.http.get<AccessibilityAuditDetailDto>(`${this.base}/accessibility/audits/${id}`));
+  }
+  a11yUpdateRemediation(id: number, req: UpdateAccessibilityRemediationRequest) {
+    return firstValueFrom(this.http.put<AccessibilityRemediationDto>(`${this.base}/accessibility/remediations/${id}`, req));
+  }
+  a11yWcagCriteria() {
+    return firstValueFrom(this.http.get<WcagCriterionDto[]>(`${this.base}/accessibility/wcag-criteria`));
+  }
+
+  // ── Round 5 — Service health ────────────────────────────────────────────
+  shMetrics(filter: { service?: string; from?: string; to?: string } = {}) {
+    const params: any = {};
+    if (filter.service) params.service = filter.service;
+    if (filter.from) params.from = filter.from;
+    if (filter.to) params.to = filter.to;
+    return firstValueFrom(this.http.get<ServiceHealthMetricDto[]>(`${this.base}/service-health/metrics`, { params }));
+  }
+  shIncidents() {
+    return firstValueFrom(this.http.get<ServiceIncidentDto[]>(`${this.base}/service-health/incidents`));
+  }
+  shChecks() {
+    return firstValueFrom(this.http.get<SyntheticCheckDto[]>(`${this.base}/service-health/synthetic-checks`));
+  }
+  shToggleCheck(id: number, enabled: boolean) {
+    return firstValueFrom(this.http.put<SyntheticCheckDto>(`${this.base}/service-health/synthetic-checks/${id}/enabled`, { enabled }));
+  }
+  shRunChecks() {
+    return firstValueFrom(this.http.post<{ ran: number }>(`${this.base}/service-health/synthetic-checks/run`, {}));
+  }
+
+  // ── Round 5 — Continuous improvement ────────────────────────────────────
+  impItems(filter: { stage?: string; source?: string; priority?: string } = {}) {
+    const params: any = {};
+    if (filter.stage) params.stage = filter.stage;
+    if (filter.source) params.source = filter.source;
+    if (filter.priority) params.priority = filter.priority;
+    return firstValueFrom(this.http.get<ImprovementItemDto[]>(`${this.base}/improvement/items`, { params }));
+  }
+  impItem(id: number) {
+    return firstValueFrom(this.http.get<ImprovementItemDetailDto>(`${this.base}/improvement/items/${id}`));
+  }
+  impCreate(req: CreateImprovementItemRequest) {
+    return firstValueFrom(this.http.post<ImprovementItemDto>(`${this.base}/improvement/items`, req));
+  }
+  impTransition(id: number, req: TransitionPdcaRequest) {
+    return firstValueFrom(this.http.post<ImprovementItemDetailDto>(`${this.base}/improvement/items/${id}/transition`, req));
+  }
+  impThresholds() {
+    return firstValueFrom(this.http.get<KpiThresholdDto[]>(`${this.base}/improvement/kpi-thresholds`));
+  }
+  impUpdateThreshold(id: number, req: UpdateKpiThresholdRequest) {
+    return firstValueFrom(this.http.put<KpiThresholdDto>(`${this.base}/improvement/kpi-thresholds/${id}`, req));
+  }
+
+  // ── Round 5 — CX analytics ──────────────────────────────────────────────
+  cxaSnapshots(filter: { from?: string; to?: string; segment?: string } = {}) {
+    const params: any = {};
+    if (filter.from) params.from = filter.from;
+    if (filter.to) params.to = filter.to;
+    if (filter.segment) params.segment = filter.segment;
+    return firstValueFrom(this.http.get<CxAnalyticsSnapshotDto[]>(`${this.base}/cx-analytics/snapshots`, { params }));
+  }
+  cxaTrend(segment: string, days: number) {
+    return firstValueFrom(this.http.get<CxAnalyticsTrendDto>(`${this.base}/cx-analytics/trend`, { params: { segment, days } as any }));
+  }
+  cxaRootCauseLinks() {
+    return firstValueFrom(this.http.get<RootCauseLinkDto[]>(`${this.base}/cx-analytics/root-cause-links`));
+  }
+  cxaCreateRootCauseLink(req: CreateRootCauseLinkRequest) {
+    return firstValueFrom(this.http.post<RootCauseLinkDto>(`${this.base}/cx-analytics/root-cause-links`, req));
+  }
+
+  // ── Round 5 — Content governance ────────────────────────────────────────
+  cgReviewCycles() {
+    return firstValueFrom(this.http.get<ContentReviewCycleDto[]>(`${this.base}/content-governance/review-cycles`));
+  }
+  cgCreateCycle(req: CreateContentReviewCycleRequest) {
+    return firstValueFrom(this.http.post<ContentReviewCycleDto>(`${this.base}/content-governance/review-cycles`, req));
+  }
+  cgUpdateCycle(id: number, req: UpdateContentReviewCycleRequest) {
+    return firstValueFrom(this.http.put<ContentReviewCycleDto>(`${this.base}/content-governance/review-cycles/${id}`, req));
+  }
+  cgChannelPerformance(filter: { channel?: string; from?: string; to?: string } = {}) {
+    const params: any = {};
+    if (filter.channel) params.channel = filter.channel;
+    if (filter.from) params.from = filter.from;
+    if (filter.to) params.to = filter.to;
+    return firstValueFrom(this.http.get<ChannelPerformanceMetricDto[]>(`${this.base}/content-governance/channel-performance`, { params }));
+  }
+  cgStaleArticles() {
+    return firstValueFrom(this.http.get<StaleArticleDto[]>(`${this.base}/content-governance/stale-articles`));
   }
 }

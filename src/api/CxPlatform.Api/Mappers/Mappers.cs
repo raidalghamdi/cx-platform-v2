@@ -95,4 +95,68 @@ public static class Mappers
     public static AutomationRuleDto ToDto(this AutomationRule r) =>
         new(r.Id, r.NameEn, r.NameAr, r.TriggerType, r.ConditionJson, r.ActionType,
             r.Enabled, r.LastRunAt, r.LastRunStatus, r.RunCount);
+
+    // ── Round 5 mappers ────────────────────────────────────────────────────
+
+    public static AccessibilityAuditDto ToDto(this AccessibilityAuditEntry a)
+    {
+        IReadOnlyList<string> pages;
+        try
+        {
+            pages = System.Text.Json.JsonSerializer.Deserialize<List<string>>(
+                string.IsNullOrWhiteSpace(a.ScopePagesJson) ? "[]" : a.ScopePagesJson)
+                ?? new List<string>();
+        }
+        catch { pages = new List<string>(); }
+        return new AccessibilityAuditDto(a.Id, a.AuditDate, a.Auditor, pages,
+            a.WcagLevel.ToString(), a.TotalIssues, a.OpenIssues, a.ReportUrl, a.Notes);
+    }
+
+    public static AccessibilityRemediationDto ToDto(this AccessibilityRemediationItem r) =>
+        new(r.Id, r.AuditId, r.WcagCriterion, r.Severity.ToString(),
+            r.DescriptionEn, r.DescriptionAr, r.Owner, r.Status.ToString(),
+            r.TargetDate, r.ResolvedDate);
+
+    public static ServiceHealthMetricDto ToDto(this ServiceHealthMetric m) =>
+        new(m.Id, m.ServiceName, m.MeasuredAt, m.UptimePct, m.P95LatencyMs,
+            m.ErrorRatePct, m.MttrMinutes, m.RequestCount);
+
+    public static ServiceIncidentDto ToDto(this ServiceIncident i) =>
+        new(i.Id, i.ServiceName, i.OpenedAt, i.ResolvedAt, i.Severity.ToString(),
+            i.TitleEn, i.TitleAr, i.RootCauseEn, i.RootCauseAr,
+            i.RemediationEn, i.RemediationAr, i.Status.ToString());
+
+    public static SyntheticCheckDto ToDto(this SyntheticCheck c) =>
+        new(c.Id, c.Name, c.Endpoint, c.IntervalSeconds, c.LastRunAt,
+            c.LastStatus.ToString(), c.LastLatencyMs, c.Enabled);
+
+    public static KpiThresholdDto ToDto(this KpiThreshold t, string kpiKey) =>
+        new(t.Id, t.KpiId, kpiKey, t.ThresholdValue,
+            t.ComparisonOp.ToString(), t.BreachAction.ToString(), t.Enabled);
+
+    public static ImprovementItemDto ToDto(this ImprovementItem i) =>
+        new(i.Id, i.SourceType.ToString(), i.SourceRefId, i.TitleEn, i.TitleAr,
+            i.DescriptionEn, i.DescriptionAr, i.Owner, i.Priority.ToString(),
+            i.PdcaStage.ToString(), i.CreatedAt, i.TargetDate, i.ClosedAt);
+
+    public static PdcaLogDto ToDto(this PdcaCycleLog l) =>
+        new(l.Id, l.ImprovementItemId, l.FromStage.ToString(), l.ToStage.ToString(),
+            l.ActorUserId, l.ChangedAt, l.NotesEn, l.NotesAr);
+
+    public static CxAnalyticsSnapshotDto ToDto(this CxAnalyticsSnapshot s) =>
+        new(s.Id, s.SnapshotDate, s.Csat, s.Nps, s.Ces,
+            s.ComplaintVolume, s.ResolutionRateP95Hours, s.JourneyId, s.Segment);
+
+    public static RootCauseLinkDto ToDto(this RootCauseLink l) =>
+        new(l.Id, l.FromType, l.FromRefId, l.ToType, l.ToRefId, l.LinkStrength, l.Notes);
+
+    public static ContentReviewCycleDto ToDto(this ContentReviewCycle r,
+        string articleTitleEn = "", string articleTitleAr = "") =>
+        new(r.Id, r.KbArticleId, articleTitleEn, articleTitleAr,
+            r.DueDate, r.AssignedReviewer, r.Status.ToString(), r.CompletedAt,
+            r.FreshnessScore, r.EnArParityFlag, r.Notes);
+
+    public static ChannelPerformanceMetricDto ToDto(this ChannelPerformanceMetric m) =>
+        new(m.Id, m.Channel, m.MeasuredAt, m.VolumeCount,
+            m.AvgResponseMinutes, m.ResolutionRatePct, m.CsatScore);
 }

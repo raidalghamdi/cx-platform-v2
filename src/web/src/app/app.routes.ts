@@ -132,6 +132,42 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/automation/automation.component').then((m) => m.AutomationComponent),
       },
+      // Round 5 — maturity-model pages.
+      {
+        path: 'accessibility',
+        data: { pageKey: '/accessibility' },
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/accessibility/accessibility.component').then((m) => m.AccessibilityComponent),
+      },
+      {
+        path: 'service-health',
+        data: { pageKey: '/service-health' },
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/service-health/service-health.component').then((m) => m.ServiceHealthComponent),
+      },
+      {
+        path: 'improvement',
+        data: { pageKey: '/improvement' },
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/improvement/improvement.component').then((m) => m.ImprovementComponent),
+      },
+      {
+        path: 'cx-analytics',
+        data: { pageKey: '/cx-analytics' },
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/cx-analytics/cx-analytics.component').then((m) => m.CxAnalyticsComponent),
+      },
+      {
+        path: 'content-governance',
+        data: { pageKey: '/content-governance' },
+        canActivate: [roleGuard],
+        loadComponent: () =>
+          import('./features/content-governance/content-governance.component').then((m) => m.ContentGovernanceComponent),
+      },
     ],
   },
   // Unknown routes fall back to the public landing page.

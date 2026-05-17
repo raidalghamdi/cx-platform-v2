@@ -79,6 +79,19 @@ builder.Services.AddSingleton<IChannelAdapter, WhatsAppAdapter>();
 builder.Services.AddSingleton<IChannelAdapter, ChatAdapter>();
 builder.Services.AddSingleton<IChannelAdapterRegistry, ChannelAdapterRegistry>();
 
+// Round 5 — workflow services. Subagent 1 registers no-op stubs so the API
+// runs end-to-end before Subagent 2 lands the real implementations.
+builder.Services.AddScoped<CxPlatform.Application.Services.IPdcaTransitionService,
+    CxPlatform.Infrastructure.WorkflowStubs.PdcaTransitionServiceStub>();
+builder.Services.AddScoped<CxPlatform.Application.Services.IThresholdEvaluationService,
+    CxPlatform.Infrastructure.WorkflowStubs.ThresholdEvaluationServiceStub>();
+builder.Services.AddSingleton<CxPlatform.Application.Services.IContentFreshnessService,
+    CxPlatform.Infrastructure.WorkflowStubs.ContentFreshnessServiceStub>();
+builder.Services.AddScoped<CxPlatform.Application.Services.ICxAnalyticsAggregatorService,
+    CxPlatform.Infrastructure.WorkflowStubs.CxAnalyticsAggregatorServiceStub>();
+builder.Services.AddSingleton<CxPlatform.Application.Services.ISyntheticCheckRunner,
+    CxPlatform.Infrastructure.WorkflowStubs.SyntheticCheckRunnerStub>();
+
 // ── Controllers + Swagger ───────────────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(o =>

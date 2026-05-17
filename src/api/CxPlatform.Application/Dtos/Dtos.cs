@@ -386,3 +386,230 @@ public record AutomationRuleDto(
 public record ToggleAutomationRequest(bool Enabled);
 
 public record AutomationRunResultDto(bool Ok, string Status, int LatencyMs, string? Note);
+
+// ──────────────────────────────────────────────────────────────────────────
+// Round 5: Maturity-model DTOs
+// ──────────────────────────────────────────────────────────────────────────
+
+// Gap 1 — Accessibility
+public record AccessibilityAuditDto(
+    long Id,
+    DateTime AuditDate,
+    string Auditor,
+    IReadOnlyList<string> ScopePages,
+    string WcagLevel,
+    int TotalIssues,
+    int OpenIssues,
+    string? ReportUrl,
+    string Notes);
+
+public record AccessibilityRemediationDto(
+    long Id,
+    long AuditId,
+    string WcagCriterion,
+    string Severity,
+    string DescriptionEn,
+    string DescriptionAr,
+    string Owner,
+    string Status,
+    DateTime? TargetDate,
+    DateTime? ResolvedDate);
+
+public record AccessibilityAuditDetailDto(
+    AccessibilityAuditDto Audit,
+    IReadOnlyList<AccessibilityRemediationDto> Items);
+
+public record CreateAccessibilityAuditRequest(
+    string Auditor,
+    IReadOnlyList<string> ScopePages,
+    string WcagLevel,
+    string? ReportUrl,
+    string Notes);
+
+public record UpdateAccessibilityRemediationRequest(
+    string Status,
+    DateTime? TargetDate,
+    string Owner);
+
+public record WcagCriterionDto(string Id, string Name, string Level, string Principle);
+
+// Gap 2 — Service health
+public record ServiceHealthMetricDto(
+    long Id,
+    string ServiceName,
+    DateTime MeasuredAt,
+    decimal UptimePct,
+    int P95LatencyMs,
+    decimal ErrorRatePct,
+    int MttrMinutes,
+    int RequestCount);
+
+public record ServiceIncidentDto(
+    long Id,
+    string ServiceName,
+    DateTime OpenedAt,
+    DateTime? ResolvedAt,
+    string Severity,
+    string TitleEn,
+    string TitleAr,
+    string RootCauseEn,
+    string RootCauseAr,
+    string RemediationEn,
+    string RemediationAr,
+    string Status);
+
+public record CreateServiceIncidentRequest(
+    string ServiceName,
+    string Severity,
+    string TitleEn,
+    string TitleAr,
+    string RootCauseEn,
+    string RootCauseAr);
+
+public record UpdateServiceIncidentRequest(
+    string Status,
+    string? RemediationEn,
+    string? RemediationAr);
+
+public record SyntheticCheckDto(
+    long Id,
+    string Name,
+    string Endpoint,
+    int IntervalSeconds,
+    DateTime? LastRunAt,
+    string LastStatus,
+    int LastLatencyMs,
+    bool Enabled);
+
+public record ToggleSyntheticCheckRequest(bool Enabled);
+
+// Gap 3 — Continuous improvement
+public record KpiThresholdDto(
+    long Id,
+    long KpiId,
+    string KpiKey,
+    decimal ThresholdValue,
+    string ComparisonOp,
+    string BreachAction,
+    bool Enabled);
+
+public record UpdateKpiThresholdRequest(
+    decimal ThresholdValue,
+    string ComparisonOp,
+    string BreachAction,
+    bool Enabled);
+
+public record ImprovementItemDto(
+    long Id,
+    string SourceType,
+    long? SourceRefId,
+    string TitleEn,
+    string TitleAr,
+    string DescriptionEn,
+    string DescriptionAr,
+    string Owner,
+    string Priority,
+    string PdcaStage,
+    DateTime CreatedAt,
+    DateTime? TargetDate,
+    DateTime? ClosedAt);
+
+public record PdcaLogDto(
+    long Id,
+    long ImprovementItemId,
+    string FromStage,
+    string ToStage,
+    long? ActorUserId,
+    DateTime ChangedAt,
+    string NotesEn,
+    string NotesAr);
+
+public record ImprovementItemDetailDto(ImprovementItemDto Item, IReadOnlyList<PdcaLogDto> Log);
+
+public record CreateImprovementItemRequest(
+    string SourceType,
+    long? SourceRefId,
+    string TitleEn,
+    string TitleAr,
+    string DescriptionEn,
+    string DescriptionAr,
+    string Owner,
+    string Priority,
+    DateTime? TargetDate);
+
+public record TransitionPdcaRequest(string ToStage, string NotesEn, string NotesAr);
+
+// Gap 4 — CX analytics
+public record CxAnalyticsSnapshotDto(
+    long Id,
+    DateTime SnapshotDate,
+    decimal Csat,
+    decimal Nps,
+    decimal Ces,
+    int ComplaintVolume,
+    decimal ResolutionRateP95Hours,
+    long? JourneyId,
+    string Segment);
+
+public record CxAnalyticsTrendDto(
+    string Segment,
+    IReadOnlyList<CxAnalyticsSnapshotDto> Points);
+
+public record RootCauseLinkDto(
+    long Id,
+    string FromType,
+    long FromRefId,
+    string ToType,
+    long ToRefId,
+    decimal LinkStrength,
+    string Notes);
+
+public record CreateRootCauseLinkRequest(
+    string FromType,
+    long FromRefId,
+    string ToType,
+    long ToRefId,
+    decimal LinkStrength,
+    string Notes);
+
+// Gap 5 — Content & channels
+public record ContentReviewCycleDto(
+    long Id,
+    long KbArticleId,
+    string ArticleTitleEn,
+    string ArticleTitleAr,
+    DateTime DueDate,
+    string AssignedReviewer,
+    string Status,
+    DateTime? CompletedAt,
+    int FreshnessScore,
+    bool EnArParityFlag,
+    string Notes);
+
+public record CreateContentReviewCycleRequest(
+    long KbArticleId,
+    DateTime DueDate,
+    string AssignedReviewer);
+
+public record UpdateContentReviewCycleRequest(
+    string Status,
+    string AssignedReviewer,
+    string Notes);
+
+public record ChannelPerformanceMetricDto(
+    long Id,
+    string Channel,
+    DateTime MeasuredAt,
+    int VolumeCount,
+    decimal AvgResponseMinutes,
+    decimal ResolutionRatePct,
+    decimal CsatScore);
+
+public record StaleArticleDto(
+    long ArticleId,
+    string TitleEn,
+    string TitleAr,
+    string Category,
+    DateTime UpdatedAt,
+    int FreshnessScore,
+    bool EnArParityFlag);

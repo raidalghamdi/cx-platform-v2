@@ -118,6 +118,12 @@ export class AppShellComponent {
     { href: '/about',        key: 'nav.about',        pageKey: '/about' },
     { href: '/audit',        key: 'nav.audit',        pageKey: '/audit' },
     { href: '/automation',   key: 'nav.automation',   pageKey: '/automation' },
+    // Round 5 — maturity-model pages
+    { href: '/accessibility',      key: 'nav.accessibility',     pageKey: '/accessibility' },
+    { href: '/service-health',     key: 'nav.serviceHealth',     pageKey: '/service-health' },
+    { href: '/improvement',        key: 'nav.improvement',       pageKey: '/improvement' },
+    { href: '/cx-analytics',       key: 'nav.cxAnalytics',       pageKey: '/cx-analytics' },
+    { href: '/content-governance', key: 'nav.contentGovernance', pageKey: '/content-governance' },
     { href: '/admin',        key: 'nav.admin',        pageKey: '/admin' },
   ];
 

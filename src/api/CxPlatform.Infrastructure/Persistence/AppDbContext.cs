@@ -33,6 +33,20 @@ public class AppDbContext : DbContext
     public DbSet<AutomationRule>       AutomationRules       => Set<AutomationRule>();
     public DbSet<PortalRequest>        PortalRequests        => Set<PortalRequest>();
 
+    // Round 5 — maturity model
+    public DbSet<AccessibilityAuditEntry>     AccessibilityAudits        => Set<AccessibilityAuditEntry>();
+    public DbSet<AccessibilityRemediationItem> AccessibilityRemediations => Set<AccessibilityRemediationItem>();
+    public DbSet<ServiceHealthMetric>         ServiceHealthMetrics       => Set<ServiceHealthMetric>();
+    public DbSet<ServiceIncident>             ServiceIncidents           => Set<ServiceIncident>();
+    public DbSet<SyntheticCheck>              SyntheticChecks            => Set<SyntheticCheck>();
+    public DbSet<KpiThreshold>                KpiThresholds              => Set<KpiThreshold>();
+    public DbSet<ImprovementItem>             ImprovementItems           => Set<ImprovementItem>();
+    public DbSet<PdcaCycleLog>                PdcaCycleLogs              => Set<PdcaCycleLog>();
+    public DbSet<CxAnalyticsSnapshot>         CxAnalyticsSnapshots       => Set<CxAnalyticsSnapshot>();
+    public DbSet<RootCauseLink>               RootCauseLinks             => Set<RootCauseLink>();
+    public DbSet<ContentReviewCycle>          ContentReviewCycles        => Set<ContentReviewCycle>();
+    public DbSet<ChannelPerformanceMetric>    ChannelPerformanceMetrics  => Set<ChannelPerformanceMetric>();
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         // ── Users ───────────────────────────────────────────────────────────
@@ -299,6 +313,131 @@ public class AppDbContext : DbContext
             e.Property(x => x.SubjectAr).HasMaxLength(255);
             e.Property(x => x.BodyEn).HasColumnType("text");
             e.Property(x => x.BodyAr).HasColumnType("text");
+        });
+
+        // ── Round 5: Accessibility ─────────────────────────────────────────
+        mb.Entity<AccessibilityAuditEntry>(e =>
+        {
+            e.ToTable("accessibility_audits");
+            e.HasIndex(x => x.AuditDate);
+            e.Property(x => x.Auditor).HasMaxLength(190);
+            e.Property(x => x.ScopePagesJson).HasColumnType("json");
+            e.Property(x => x.ReportUrl).HasMaxLength(500);
+            e.Property(x => x.Notes).HasColumnType("text");
+        });
+
+        mb.Entity<AccessibilityRemediationItem>(e =>
+        {
+            e.ToTable("accessibility_remediations");
+            e.HasIndex(x => x.AuditId);
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.WcagCriterion).HasMaxLength(64).IsRequired();
+            e.Property(x => x.Owner).HasMaxLength(190);
+            e.Property(x => x.DescriptionEn).HasColumnType("text");
+            e.Property(x => x.DescriptionAr).HasColumnType("text");
+        });
+
+        // ── Round 5: Service health ────────────────────────────────────────
+        mb.Entity<ServiceHealthMetric>(e =>
+        {
+            e.ToTable("service_health_metrics");
+            e.HasIndex(x => new { x.ServiceName, x.MeasuredAt });
+            e.Property(x => x.ServiceName).HasMaxLength(64).IsRequired();
+            e.Property(x => x.UptimePct).HasColumnType("decimal(8,4)");
+            e.Property(x => x.ErrorRatePct).HasColumnType("decimal(8,4)");
+        });
+
+        mb.Entity<ServiceIncident>(e =>
+        {
+            e.ToTable("service_incidents");
+            e.HasIndex(x => new { x.ServiceName, x.OpenedAt });
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.ServiceName).HasMaxLength(64).IsRequired();
+            e.Property(x => x.TitleEn).HasMaxLength(255);
+            e.Property(x => x.TitleAr).HasMaxLength(255);
+            e.Property(x => x.RootCauseEn).HasColumnType("text");
+            e.Property(x => x.RootCauseAr).HasColumnType("text");
+            e.Property(x => x.RemediationEn).HasColumnType("text");
+            e.Property(x => x.RemediationAr).HasColumnType("text");
+        });
+
+        mb.Entity<SyntheticCheck>(e =>
+        {
+            e.ToTable("synthetic_checks");
+            e.HasIndex(x => x.Enabled);
+            e.Property(x => x.Name).HasMaxLength(96).IsRequired();
+            e.Property(x => x.Endpoint).HasMaxLength(500).IsRequired();
+        });
+
+        // ── Round 5: Continuous improvement ───────────────────────────────
+        mb.Entity<KpiThreshold>(e =>
+        {
+            e.ToTable("kpi_thresholds");
+            e.HasIndex(x => x.KpiId);
+            e.Property(x => x.ThresholdValue).HasColumnType("decimal(18,4)");
+        });
+
+        mb.Entity<ImprovementItem>(e =>
+        {
+            e.ToTable("improvement_items");
+            e.HasIndex(x => x.PdcaStage);
+            e.HasIndex(x => x.SourceType);
+            e.Property(x => x.TitleEn).HasMaxLength(255).IsRequired();
+            e.Property(x => x.TitleAr).HasMaxLength(255).IsRequired();
+            e.Property(x => x.Owner).HasMaxLength(190);
+            e.Property(x => x.DescriptionEn).HasColumnType("text");
+            e.Property(x => x.DescriptionAr).HasColumnType("text");
+        });
+
+        mb.Entity<PdcaCycleLog>(e =>
+        {
+            e.ToTable("pdca_cycle_logs");
+            e.HasIndex(x => x.ImprovementItemId);
+            e.Property(x => x.NotesEn).HasColumnType("text");
+            e.Property(x => x.NotesAr).HasColumnType("text");
+        });
+
+        // ── Round 5: CX analytics ─────────────────────────────────────────
+        mb.Entity<CxAnalyticsSnapshot>(e =>
+        {
+            e.ToTable("cx_analytics_snapshots");
+            e.HasIndex(x => new { x.SnapshotDate, x.Segment });
+            e.Property(x => x.Csat).HasColumnType("decimal(6,3)");
+            e.Property(x => x.Nps).HasColumnType("decimal(6,3)");
+            e.Property(x => x.Ces).HasColumnType("decimal(6,3)");
+            e.Property(x => x.ResolutionRateP95Hours).HasColumnType("decimal(8,2)");
+            e.Property(x => x.Segment).HasMaxLength(32);
+        });
+
+        mb.Entity<RootCauseLink>(e =>
+        {
+            e.ToTable("root_cause_links");
+            e.HasIndex(x => new { x.FromType, x.FromRefId });
+            e.HasIndex(x => new { x.ToType, x.ToRefId });
+            e.Property(x => x.FromType).HasMaxLength(32).IsRequired();
+            e.Property(x => x.ToType).HasMaxLength(32).IsRequired();
+            e.Property(x => x.LinkStrength).HasColumnType("decimal(4,3)");
+            e.Property(x => x.Notes).HasColumnType("text");
+        });
+
+        // ── Round 5: Content & channels governance ────────────────────────
+        mb.Entity<ContentReviewCycle>(e =>
+        {
+            e.ToTable("content_review_cycles");
+            e.HasIndex(x => x.KbArticleId);
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.AssignedReviewer).HasMaxLength(190);
+            e.Property(x => x.Notes).HasColumnType("text");
+        });
+
+        mb.Entity<ChannelPerformanceMetric>(e =>
+        {
+            e.ToTable("channel_performance_metrics");
+            e.HasIndex(x => new { x.Channel, x.MeasuredAt });
+            e.Property(x => x.Channel).HasMaxLength(32).IsRequired();
+            e.Property(x => x.AvgResponseMinutes).HasColumnType("decimal(8,2)");
+            e.Property(x => x.ResolutionRatePct).HasColumnType("decimal(6,3)");
+            e.Property(x => x.CsatScore).HasColumnType("decimal(6,3)");
         });
     }
 }
