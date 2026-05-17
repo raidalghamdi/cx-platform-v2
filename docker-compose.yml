@@ -1,0 +1,61 @@
+# Phase-0 compose. `mysql` + `api` + `gateway`. The Angular SPA is built
+# statically and served from the gateway in production; in dev run `ng serve`
+# separately for hot reload.
+#
+# We have not actually run this in CI (no docker available in the sandbox),
+# so verify with `docker compose config` and `docker compose up -d mysql`
+# before bringing up `api`.
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootroot
+      MYSQL_DATABASE: cx_platform
+      MYSQL_USER: cx
+      MYSQL_PASSWORD: cx
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootroot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./src/api
+      dockerfile: CxPlatform.Api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:5001
+      ConnectionStrings__Default: "server=mysql;port=3306;database=cx_platform;user=cx;password=cx;"
+      Jwt__Secret: "${JWT_SECRET:-change-me-in-prod-min-32-chars-please-okay}"
+    expose:
+      - "5001"
+
+  gateway:
+    build:
+      context: ./src/gateway
+      dockerfile: CxPlatform.Gateway/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:5000
+      ReverseProxy__Clusters__api__Destinations__api-d1__Address: "http://api:5001/"
+      ReverseProxy__Clusters__web__Destinations__web-d1__Address: "http://api:5001/"
+    ports:
+      - "5000:5000"
+
+volumes:
+  mysql-data:
