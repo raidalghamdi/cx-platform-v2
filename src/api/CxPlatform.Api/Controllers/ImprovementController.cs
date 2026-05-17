@@ -79,17 +79,54 @@ public class ImprovementController : ControllerBase
     }
 
     // PATCH /api/v1/improvement/items/{id}/transition — uses the service so
-    // legal-transition rules (Subagent 2) apply uniformly.
+    // legal-transition rules apply uniformly. Bilingual errors come back as
+    // ProblemDetails with extension fields so the SPA can pick a language.
     [HttpPost("items/{id:long}/transition")]
     [Authorize(Roles = "admin,supervisor,quality")]
     public async Task<ActionResult<ImprovementItemDetailDto>> Transition(long id, [FromBody] TransitionPdcaRequest req, CancellationToken ct)
     {
         if (!Enum.TryParse<PdcaStage>(req.ToStage, true, out var to))
-            return BadRequest(new { error = "unknown stage" });
+            return BilingualProblem(
+                "Unknown PDCA stage", "مرحلة PDCA غير معروفة",
+                $"Stage '{req.ToStage}' is not recognised.",
+                $"المرحلة '{req.ToStage}' غير معروفة.");
+
         var uid = CurrentUserId();
-        var res = await _pdca.TransitionAsync(id, to, uid, req.NotesEn ?? "", req.NotesAr ?? "", ct);
-        if (!res.Ok) return BadRequest(new { error = res.Error });
-        return await Get(id, ct);
+        try
+        {
+            var res = await _pdca.TransitionAsync(id, to, uid, req.NotesEn ?? "", req.NotesAr ?? "", ct);
+            if (!res.Ok)
+                return BilingualProblem(
+                    "PDCA transition rejected", "انتقال غير مسموح في دورة PDCA",
+                    res.Error ?? "Transition was rejected.", "تم رفض الانتقال.");
+            return await Get(id, ct);
+        }
+        catch (PdcaTransitionException ex)
+        {
+            // 400 + bilingual ProblemDetails so the SPA can render either locale.
+            return BilingualProblem(
+                "PDCA transition rejected", "انتقال غير مسموح في دورة PDCA",
+                ex.MessageEn, ex.MessageAr);
+        }
+    }
+
+    // Wraps a ProblemDetails payload with EN+AR extensions so the SPA can
+    // surface the right language without a second round-trip.
+    private ObjectResult BilingualProblem(string titleEn, string titleAr, string detailEn, string detailAr)
+    {
+        var pd = new ProblemDetails
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Title = titleEn,
+            Detail = detailEn,
+        };
+        pd.Extensions["titleAr"] = titleAr;
+        pd.Extensions["detailAr"] = detailAr;
+        return new ObjectResult(pd)
+        {
+            StatusCode = StatusCodes.Status400BadRequest,
+            ContentTypes = { "application/problem+json" },
+        };
     }
 
     // ── KPI thresholds (used by Subagent 2's threshold evaluator) ──────────

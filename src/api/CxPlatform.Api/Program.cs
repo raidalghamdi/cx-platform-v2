@@ -79,18 +79,25 @@ builder.Services.AddSingleton<IChannelAdapter, WhatsAppAdapter>();
 builder.Services.AddSingleton<IChannelAdapter, ChatAdapter>();
 builder.Services.AddSingleton<IChannelAdapterRegistry, ChannelAdapterRegistry>();
 
-// Round 5 — workflow services. Subagent 1 registers no-op stubs so the API
-// runs end-to-end before Subagent 2 lands the real implementations.
+// Round 5 — workflow services (Subagent 2: real implementations).
+// All five depend on the request-scoped AppDbContext, so they're Scoped.
+// The hosted background service creates its own scope per tick.
 builder.Services.AddScoped<CxPlatform.Application.Services.IPdcaTransitionService,
-    CxPlatform.Infrastructure.WorkflowStubs.PdcaTransitionServiceStub>();
+    CxPlatform.Infrastructure.Workflows.PdcaTransitionService>();
 builder.Services.AddScoped<CxPlatform.Application.Services.IThresholdEvaluationService,
-    CxPlatform.Infrastructure.WorkflowStubs.ThresholdEvaluationServiceStub>();
-builder.Services.AddSingleton<CxPlatform.Application.Services.IContentFreshnessService,
-    CxPlatform.Infrastructure.WorkflowStubs.ContentFreshnessServiceStub>();
+    CxPlatform.Infrastructure.Workflows.ThresholdEvaluationService>();
+builder.Services.AddScoped<CxPlatform.Application.Services.IContentFreshnessService,
+    CxPlatform.Infrastructure.Workflows.ContentFreshnessService>();
 builder.Services.AddScoped<CxPlatform.Application.Services.ICxAnalyticsAggregatorService,
-    CxPlatform.Infrastructure.WorkflowStubs.CxAnalyticsAggregatorServiceStub>();
-builder.Services.AddSingleton<CxPlatform.Application.Services.ISyntheticCheckRunner,
-    CxPlatform.Infrastructure.WorkflowStubs.SyntheticCheckRunnerStub>();
+    CxPlatform.Infrastructure.Workflows.CxAnalyticsAggregatorService>();
+builder.Services.AddScoped<CxPlatform.Application.Services.ISyntheticCheckRunner,
+    CxPlatform.Infrastructure.Workflows.SyntheticCheckRunner>();
+
+// HttpClient for the synthetic-check runner.
+builder.Services.AddHttpClient(CxPlatform.Infrastructure.Workflows.SyntheticCheckRunner.HttpClientName);
+
+// Hosted loop runs RunOnceAsync every 60 s.
+builder.Services.AddHostedService<CxPlatform.Api.HostedServices.SyntheticCheckHostedService>();
 
 // ── Controllers + Swagger ───────────────────────────────────────────────────
 builder.Services.AddControllers()
