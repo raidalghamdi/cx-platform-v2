@@ -7,6 +7,11 @@ import {
   JourneyDto, JourneyDetailDto, VocResponseDto, KbArticleDto, UpsertKbArticleRequest,
   ProgrammeInitiativeDto, UpdateProgrammeStatusRequest, GovernanceBodyDto,
   GovernanceBodyDetailDto, GovernanceDecisionDto, CreateGovernanceDecisionRequest,
+  AboutSectionDto, UpdateAboutSectionRequest, ArchitectureReferenceDto,
+  PortalRequestDto, CreatePortalRequestRequest,
+  AskCopilotRequest, CopilotInteractionDto,
+  AuditPageDto, AuditVerifyResultDto,
+  AutomationRuleDto, AutomationRunResultDto,
 } from '../models/types';
 import { environment } from '../../../environments/environment';
 
@@ -141,5 +146,56 @@ export class ApiService {
   }
   governanceDecision(bodyId: number, req: CreateGovernanceDecisionRequest) {
     return firstValueFrom(this.http.post<GovernanceDecisionDto>(`${this.base}/governance/bodies/${bodyId}/decisions`, req));
+  }
+
+  // ── Phase 2 ─────────────────────────────────────────────────────────────
+
+  aboutList() {
+    return firstValueFrom(this.http.get<AboutSectionDto[]>(`${this.base}/about`));
+  }
+  aboutUpdate(id: number, req: UpdateAboutSectionRequest) {
+    return firstValueFrom(this.http.put<AboutSectionDto>(`${this.base}/about/${id}`, req));
+  }
+
+  architecture() {
+    return firstValueFrom(this.http.get<ArchitectureReferenceDto>(`${this.base}/architecture`));
+  }
+
+  portalMyRequests() {
+    return firstValueFrom(this.http.get<PortalRequestDto[]>(`${this.base}/portal/my-requests`));
+  }
+  portalCreate(req: CreatePortalRequestRequest) {
+    return firstValueFrom(this.http.post<PortalRequestDto>(`${this.base}/portal`, req));
+  }
+
+  copilotAsk(req: AskCopilotRequest) {
+    return firstValueFrom(this.http.post<CopilotInteractionDto>(`${this.base}/copilot/ask`, req));
+  }
+  copilotHistory() {
+    return firstValueFrom(this.http.get<CopilotInteractionDto[]>(`${this.base}/copilot/history`));
+  }
+
+  auditEvents(filter: { userId?: number; kind?: string; from?: string; to?: string; page?: number; pageSize?: number } = {}) {
+    const params: any = {};
+    if (filter.userId !== undefined) params.userId = filter.userId;
+    if (filter.kind) params.kind = filter.kind;
+    if (filter.from) params.from = filter.from;
+    if (filter.to) params.to = filter.to;
+    if (filter.page) params.page = filter.page;
+    if (filter.pageSize) params.pageSize = filter.pageSize;
+    return firstValueFrom(this.http.get<AuditPageDto>(`${this.base}/audit/events`, { params }));
+  }
+  auditVerify() {
+    return firstValueFrom(this.http.get<AuditVerifyResultDto>(`${this.base}/audit/verify`));
+  }
+
+  automationRules() {
+    return firstValueFrom(this.http.get<AutomationRuleDto[]>(`${this.base}/automation/rules`));
+  }
+  automationToggle(id: number, enabled: boolean) {
+    return firstValueFrom(this.http.put<AutomationRuleDto>(`${this.base}/automation/rules/${id}/enabled`, { enabled }));
+  }
+  automationRun(id: number) {
+    return firstValueFrom(this.http.post<AutomationRunResultDto>(`${this.base}/automation/rules/${id}/run`, {}));
   }
 }

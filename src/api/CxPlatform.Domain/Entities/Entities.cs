@@ -237,3 +237,56 @@ public class GovernanceDecision : EntityBase
     public string OwnerAr { get; set; } = "";
     public DateTime? DueDate { get; set; }
 }
+
+// ── Phase 2 — About page editable sections ─────────────────────────────────
+
+public class AboutSection : EntityBase
+{
+    public string KeyEn { get; set; } = "";          // e.g. "Our story"
+    public string KeyAr { get; set; } = "";          // e.g. "قصتنا"
+    public string BodyEn { get; set; } = "";
+    public string BodyAr { get; set; } = "";
+    public int OrderIndex { get; set; }              // controls page order
+}
+
+// ── Phase 2 — Copilot interactions ─────────────────────────────────────────
+
+public class CopilotInteraction : EntityBase
+{
+    public long? UserId { get; set; }
+    public string PromptEn { get; set; } = "";
+    public string PromptAr { get; set; } = "";
+    public string ResponseEn { get; set; } = "";
+    public string ResponseAr { get; set; } = "";
+    public string Intent { get; set; } = "ask";      // ask/draft_reply/summarise/find_similar
+    public int LatencyMs { get; set; }
+    public bool Success { get; set; } = true;
+}
+
+// ── Phase 2 — Automation (RPA) rules ───────────────────────────────────────
+
+public class AutomationRule : EntityBase
+{
+    public string NameEn { get; set; } = "";
+    public string NameAr { get; set; } = "";
+    public string TriggerType { get; set; } = "";    // complaint.created / voc.negative / scheduled / inbox.new
+    public string ConditionJson { get; set; } = "{}";
+    public string ActionType { get; set; } = "";     // notify / assign / escalate / kb_publish
+    public bool Enabled { get; set; } = true;
+    public DateTime? LastRunAt { get; set; }
+    public string LastRunStatus { get; set; } = "";  // success / failure / skipped / never
+    public int RunCount { get; set; }
+}
+
+// ── Phase 2 — Customer-portal lodge / track requests ───────────────────────
+
+public class PortalRequest : EntityBase
+{
+    public long? CustomerId { get; set; }
+    public string Type { get; set; } = "complaint";  // complaint / inquiry / appointment
+    public string SubjectEn { get; set; } = "";
+    public string SubjectAr { get; set; } = "";
+    public string BodyEn { get; set; } = "";
+    public string BodyAr { get; set; } = "";
+    public string Status { get; set; } = "new";      // new / in_progress / resolved / closed
+}

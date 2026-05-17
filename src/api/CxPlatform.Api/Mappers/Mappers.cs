@@ -75,4 +75,24 @@ public static class Mappers
     public static GovernanceDecisionDto ToDto(this GovernanceDecision d) =>
         new(d.Id, d.BodyId, d.DecidedAt, d.TitleEn, d.TitleAr, d.Decision,
             d.OwnerEn, d.OwnerAr, d.DueDate);
+
+    // ── Phase 2 mappers ────────────────────────────────────────────────────
+
+    public static AboutSectionDto ToDto(this AboutSection s) =>
+        new(s.Id, s.KeyEn, s.KeyAr, s.BodyEn, s.BodyAr, s.OrderIndex, s.UpdatedAt);
+
+    public static PortalRequestDto ToDto(this PortalRequest r) =>
+        new(r.Id, r.Type, r.SubjectEn, r.SubjectAr, r.BodyEn, r.BodyAr, r.Status, r.CreatedAt);
+
+    public static CopilotInteractionDto ToDto(this CopilotInteraction c) =>
+        new(c.Id, c.Intent, c.PromptEn, c.PromptAr, c.ResponseEn, c.ResponseAr,
+            c.LatencyMs, c.Success, c.CreatedAt);
+
+    public static AuditEventDto ToDto(this AuditEvent a) =>
+        new(a.Id, a.Kind, a.ActorUserId, a.TargetKind, a.TargetId,
+            a.PrevHash, a.EntryHash, a.PayloadJson, a.At);
+
+    public static AutomationRuleDto ToDto(this AutomationRule r) =>
+        new(r.Id, r.NameEn, r.NameAr, r.TriggerType, r.ConditionJson, r.ActionType,
+            r.Enabled, r.LastRunAt, r.LastRunStatus, r.RunCount);
 }

@@ -102,16 +102,23 @@ export class AppShellComponent {
   toasts = inject(ToastService);
 
   private readonly NAV: NavItem[] = [
-    { href: '/dashboard',  key: 'nav.dashboard',  pageKey: '/dashboard' },
-    { href: '/complaints', key: 'nav.complaints', pageKey: '/complaints' },
-    { href: '/inbox',      key: 'nav.inbox',      pageKey: '/inbox' },
+    { href: '/dashboard',    key: 'nav.dashboard',    pageKey: '/dashboard' },
+    { href: '/complaints',   key: 'nav.complaints',   pageKey: '/complaints' },
+    { href: '/inbox',        key: 'nav.inbox',        pageKey: '/inbox' },
     // Phase 1
-    { href: '/journeys',   key: 'nav.journeys',   pageKey: '/journeys' },
-    { href: '/voc',        key: 'nav.voc',        pageKey: '/voc' },
-    { href: '/kb',         key: 'nav.kb',         pageKey: '/kb' },
-    { href: '/programme',  key: 'nav.programme',  pageKey: '/programme' },
-    { href: '/governance', key: 'nav.governance', pageKey: '/governance' },
-    { href: '/admin',      key: 'nav.admin',      pageKey: '/admin' },
+    { href: '/journeys',     key: 'nav.journeys',     pageKey: '/journeys' },
+    { href: '/voc',          key: 'nav.voc',          pageKey: '/voc' },
+    { href: '/kb',           key: 'nav.kb',           pageKey: '/kb' },
+    { href: '/programme',    key: 'nav.programme',    pageKey: '/programme' },
+    { href: '/governance',   key: 'nav.governance',   pageKey: '/governance' },
+    // Phase 2 — landing is public, not in nav
+    { href: '/portal',       key: 'nav.portal',       pageKey: '/portal' },
+    { href: '/copilot',      key: 'nav.copilot',      pageKey: '/copilot' },
+    { href: '/architecture', key: 'nav.architecture', pageKey: '/architecture' },
+    { href: '/about',        key: 'nav.about',        pageKey: '/about' },
+    { href: '/audit',        key: 'nav.audit',        pageKey: '/audit' },
+    { href: '/automation',   key: 'nav.automation',   pageKey: '/automation' },
+    { href: '/admin',        key: 'nav.admin',        pageKey: '/admin' },
   ];
 
   visibleNav = computed(() => this.NAV.filter((n) => this.auth.allowedPage(n.pageKey)));

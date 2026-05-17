@@ -84,14 +84,18 @@ public static class Seed
         // Phase 1 grants (per brief): journeys/voc admin+supervisor+quality+executive+agent;
         // kb everyone except customer-write; programme exec+admin+supervisor+quality;
         // governance admin+supervisor+quality+executive.
+        // Phase 2 grants (per brief): /about everyone read; /architecture all
+        // non-customer; /portal admin+customer; /copilot all non-customer;
+        // /audit admin+supervisor+quality+executive; /automation admin+
+        // supervisor+executive.
         var matrix = new Dictionary<string, HashSet<string>>
         {
             ["admin"]      = new(pages),
-            ["supervisor"] = new(new[]{"/about","/dashboard","/journeys","/voc","/complaints","/inbox","/kb","/copilot","/programme","/governance","/architecture","/automation","/notifications","/profile"}),
-            ["agent"]      = new(new[]{"/about","/journeys","/complaints","/inbox","/kb","/copilot","/notifications","/profile"}),
-            ["quality"]    = new(new[]{"/about","/journeys","/voc","/complaints","/kb","/programme","/governance","/architecture","/audit","/notifications","/profile"}),
+            ["supervisor"] = new(new[]{"/about","/dashboard","/journeys","/voc","/complaints","/inbox","/kb","/copilot","/programme","/governance","/architecture","/audit","/automation","/notifications","/profile"}),
+            ["agent"]      = new(new[]{"/about","/architecture","/journeys","/complaints","/inbox","/kb","/copilot","/notifications","/profile"}),
+            ["quality"]    = new(new[]{"/about","/architecture","/journeys","/voc","/complaints","/kb","/programme","/governance","/audit","/copilot","/notifications","/profile"}),
             ["customer"]   = new(new[]{"/about","/portal","/kb","/notifications","/profile"}),
-            ["executive"]  = new(new[]{"/about","/dashboard","/journeys","/voc","/kb","/programme","/governance","/architecture","/notifications","/profile"}),
+            ["executive"]  = new(new[]{"/about","/architecture","/dashboard","/journeys","/voc","/kb","/programme","/governance","/audit","/automation","/copilot","/notifications","/profile"}),
         };
         foreach (var role in matrix.Keys)
             foreach (var p in pages)
@@ -442,6 +446,112 @@ public static class Seed
                 Decision = "Approved subject to ticketing rollout.",
                 OwnerEn = "Ahmed Al-Harbi", OwnerAr = "أحمد الحربي",
                 DueDate = DateTime.UtcNow.AddMonths(1), DecidedAt = DateTime.UtcNow.AddDays(-2) }
+        );
+
+        await db.SaveChangesAsync(ct);
+
+        // ── Phase 2: About sections (4) ────────────────────────────────────
+        db.AboutSections.AddRange(
+            new AboutSection { OrderIndex = 1,
+                KeyEn = "Our story", KeyAr = "قصتنا",
+                BodyEn = "The GAC Customer Experience programme was founded to centralise complaints, surveys, and customer journeys across all service touchpoints. The platform you are using is the second-generation rebuild on the GAC mandatory stack.",
+                BodyAr = "أُسس برنامج تجربة المستفيد في الهيئة العامة للمنافسة لتوحيد الشكاوى والاستبيانات ورحلات المستفيد عبر جميع نقاط التماس. هذه المنصة هي الإصدار الثاني المعاد بناؤه على الكدسة التقنية المعتمدة من الهيئة." },
+            new AboutSection { OrderIndex = 2,
+                KeyEn = "Vision 2030 alignment", KeyAr = "المواءمة مع رؤية 2030",
+                BodyEn = "Our work supports the Vision 2030 Quality of Life programme by improving public service responsiveness and transparency, in line with the Digital Government Authority's customer-experience maturity model.",
+                BodyAr = "تدعم أعمالنا برنامج جودة الحياة ضمن رؤية 2030 من خلال تحسين سرعة الاستجابة وشفافية الخدمات العامة، بما يتوافق مع نموذج نضج تجربة المستفيد لهيئة الحكومة الرقمية." },
+            new AboutSection { OrderIndex = 3,
+                KeyEn = "How we work", KeyAr = "كيف نعمل",
+                BodyEn = "We run on Angular 17, ASP.NET Core 8, MySQL 8 and YARP. Every mutation is captured in a hash-chained audit log so investigators can prove what changed, by whom, and when.",
+                BodyAr = "نشغّل النظام على Angular 17 و ASP.NET Core 8 و MySQL 8 و YARP. كل تعديل يُسجَّل في سجل تدقيق مرتبط بسلسلة هاش بحيث يمكن للمدققين إثبات ما تغيّر ومن غيّره ومتى." },
+            new AboutSection { OrderIndex = 4,
+                KeyEn = "Team", KeyAr = "الفريق",
+                BodyEn = "Noor Al Noor (System Administrator), Raid Al-Ghamdi (Chief of Strategy & Excellence), Fatima Al-Otaibi (CX Supervisor), Layla Al-Qahtani (Quality Officer), Ahmed Al-Harbi (Service Agent).",
+                BodyAr = "نور النور (مسؤول النظام)، رائد الغامدي (رئيس الاستراتيجية والتميز)، فاطمة العتيبي (مشرفة تجربة المستفيد)، ليلى القحطاني (مسؤولة الجودة)، أحمد الحربي (موظف خدمة المستفيدين)." }
+        );
+
+        // ── Phase 2: Automation rules (4) ──────────────────────────────────
+        db.AutomationRules.AddRange(
+            new AutomationRule { NameEn = "Auto-acknowledge new complaint", NameAr = "إشعار تلقائي للشكوى الجديدة",
+                TriggerType = "complaint.created",
+                ConditionJson = "{\"any\": true}",
+                ActionType = "notify",
+                Enabled = true, LastRunAt = DateTime.UtcNow.AddMinutes(-15),
+                LastRunStatus = "success", RunCount = 124 },
+            new AutomationRule { NameEn = "Escalate detractor VoC response", NameAr = "تصعيد ردود VoC السلبية",
+                TriggerType = "voc.negative",
+                ConditionJson = "{\"nps_lte\": 6}",
+                ActionType = "escalate",
+                Enabled = true, LastRunAt = DateTime.UtcNow.AddHours(-3),
+                LastRunStatus = "success", RunCount = 17 },
+            new AutomationRule { NameEn = "Daily inbox triage", NameAr = "فرز يومي للصندوق",
+                TriggerType = "scheduled",
+                ConditionJson = "{\"cron\": \"0 8 * * *\"}",
+                ActionType = "assign",
+                Enabled = true, LastRunAt = DateTime.UtcNow.Date.AddHours(8),
+                LastRunStatus = "success", RunCount = 31 },
+            new AutomationRule { NameEn = "Publish reviewed KB drafts", NameAr = "نشر مقالات المعرفة المعتمدة",
+                TriggerType = "scheduled",
+                ConditionJson = "{\"cron\": \"0 12 * * 1\"}",
+                ActionType = "kb_publish",
+                Enabled = false, LastRunAt = null,
+                LastRunStatus = "never", RunCount = 0 }
+        );
+
+        // ── Phase 2: Portal requests for the demo customer (4) ─────────────
+        db.PortalRequests.AddRange(
+            new PortalRequest { CustomerId = customer.Id, Type = "complaint",
+                SubjectEn = "Delay in licence renewal", SubjectAr = "تأخر تجديد الرخصة",
+                BodyEn = "Submitted 14 days ago, no update yet despite complete documents.",
+                BodyAr = "قدمت قبل 14 يوماً ولا يوجد تحديث رغم اكتمال المستندات.",
+                Status = "in_progress", CreatedAt = DateTime.UtcNow.AddDays(-9) },
+            new PortalRequest { CustomerId = customer.Id, Type = "inquiry",
+                SubjectEn = "How do I update my registered mobile number?", SubjectAr = "كيف أحدّث رقم الجوال المسجل؟",
+                BodyEn = "I changed my number and need to update it on my account.",
+                BodyAr = "غيّرت رقمي وأرغب في تحديثه في الحساب.",
+                Status = "resolved", CreatedAt = DateTime.UtcNow.AddDays(-22) },
+            new PortalRequest { CustomerId = customer.Id, Type = "appointment",
+                SubjectEn = "Request branch appointment", SubjectAr = "طلب موعد في الفرع",
+                BodyEn = "Need an in-person visit for original document submission.",
+                BodyAr = "أحتاج زيارة الفرع لتسليم الوثائق الأصلية.",
+                Status = "new", CreatedAt = DateTime.UtcNow.AddHours(-4) },
+            new PortalRequest { CustomerId = customer.Id, Type = "complaint",
+                SubjectEn = "Tariff invoice mismatch", SubjectAr = "اختلاف في الفاتورة",
+                BodyEn = "Invoiced amount differs from published tariff.",
+                BodyAr = "المبلغ في الفاتورة يختلف عن التعرفة المنشورة.",
+                Status = "closed", CreatedAt = DateTime.UtcNow.AddDays(-40) }
+        );
+
+        // ── Phase 2: Copilot interactions — short history (4) ──────────────
+        db.CopilotInteractions.AddRange(
+            new CopilotInteraction { UserId = supervisor.Id, Intent = "summarise",
+                PromptEn = "Summarise the open complaints from this week.",
+                PromptAr = "لخّص الشكاوى المفتوحة لهذا الأسبوع.",
+                ResponseEn = "8 open complaints — 3 high priority. Top theme: licence renewal delays.",
+                ResponseAr = "8 شكاوى مفتوحة — 3 ذات أولوية عالية. الموضوع الأبرز: تأخر تجديد الرخص.",
+                LatencyMs = 1120, Success = true,
+                CreatedAt = DateTime.UtcNow.AddHours(-2) },
+            new CopilotInteraction { UserId = agent.Id, Intent = "draft_reply",
+                PromptEn = "Draft a reply to a customer waiting on licence renewal.",
+                PromptAr = "صغ رداً لمستفيد ينتظر تجديد رخصة القيادة.",
+                ResponseEn = "Thank you for your patience. We have escalated your request to the issuing authority and will update you within 48 hours.",
+                ResponseAr = "شكراً لصبرك. تم تصعيد طلبك إلى الجهة المُصدِرة وسنوافيك بتحديث خلال 48 ساعة.",
+                LatencyMs = 980, Success = true,
+                CreatedAt = DateTime.UtcNow.AddHours(-1) },
+            new CopilotInteraction { UserId = quality.Id, Intent = "find_similar",
+                PromptEn = "Find complaints similar to COMP-003.",
+                PromptAr = "ابحث عن شكاوى مشابهة لـ COMP-003.",
+                ResponseEn = "3 similar complaints found this quarter — all relate to residency fee miscalculation.",
+                ResponseAr = "وجدت 3 شكاوى مشابهة هذا الربع — جميعها تتعلق باحتساب رسوم الإقامة.",
+                LatencyMs = 1320, Success = true,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-30) },
+            new CopilotInteraction { UserId = admin.Id, Intent = "ask",
+                PromptEn = "What is our current SLA compliance?",
+                PromptAr = "ما نسبة الالتزام الحالية بمستوى الخدمة؟",
+                ResponseEn = "91.2% (down 0.6 points week-over-week). The dip is concentrated in payment-related complaints.",
+                ResponseAr = "91.2% (انخفاض 0.6 نقطة عن الأسبوع الماضي). التراجع مركّز في الشكاوى المتعلقة بالمدفوعات.",
+                LatencyMs = 1080, Success = true,
+                CreatedAt = DateTime.UtcNow.AddMinutes(-12) }
         );
 
         await db.SaveChangesAsync(ct);

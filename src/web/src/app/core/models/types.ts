@@ -227,3 +227,133 @@ export interface CreateGovernanceDecisionRequest {
   ownerAr: string;
   dueDate?: string | null;
 }
+
+// ── Phase 2 ───────────────────────────────────────────────────────────────
+
+export interface AboutSectionDto {
+  id: number;
+  keyEn: string;
+  keyAr: string;
+  bodyEn: string;
+  bodyAr: string;
+  orderIndex: number;
+  updatedAt: string;
+}
+
+export interface UpdateAboutSectionRequest {
+  keyEn: string;
+  keyAr: string;
+  bodyEn: string;
+  bodyAr: string;
+  orderIndex: number;
+}
+
+export interface ArchitectureDomainDto {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  descriptionEn: string;
+  descriptionAr: string;
+}
+
+export interface ArchitecturePatternDto {
+  id: string;
+  nameEn: string;
+  nameAr: string;
+  style: 'synchronous' | 'asynchronous' | 'batch';
+  usageEn: string;
+  usageAr: string;
+}
+
+export interface ArchitectureReferenceDto {
+  domains: ArchitectureDomainDto[];
+  patterns: ArchitecturePatternDto[];
+}
+
+export type PortalRequestType = 'complaint' | 'inquiry' | 'appointment';
+export type PortalStatus = 'new' | 'in_progress' | 'resolved' | 'closed';
+
+export interface PortalRequestDto {
+  id: number;
+  type: PortalRequestType;
+  subjectEn: string;
+  subjectAr: string;
+  bodyEn: string;
+  bodyAr: string;
+  status: PortalStatus;
+  createdAt: string;
+}
+
+export interface CreatePortalRequestRequest {
+  type: PortalRequestType;
+  subjectEn: string;
+  subjectAr: string;
+  bodyEn: string;
+  bodyAr: string;
+}
+
+export type CopilotIntent = 'ask' | 'draft_reply' | 'summarise' | 'find_similar';
+
+export interface AskCopilotRequest {
+  intent: CopilotIntent;
+  promptEn: string;
+  promptAr: string;
+}
+
+export interface CopilotInteractionDto {
+  id: number;
+  intent: CopilotIntent;
+  promptEn: string;
+  promptAr: string;
+  responseEn: string;
+  responseAr: string;
+  latencyMs: number;
+  success: boolean;
+  createdAt: string;
+}
+
+export interface AuditEventDto {
+  id: number;
+  kind: string;
+  actorUserId?: number | null;
+  targetKind: string;
+  targetId?: number | null;
+  prevHash: string;
+  entryHash: string;
+  payloadJson: string;
+  at: string;
+}
+
+export interface AuditPageDto {
+  items: AuditEventDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface AuditVerifyResultDto {
+  ok: boolean;
+  total: number;
+  firstBrokenIndex?: number | null;
+  firstBrokenId?: number | null;
+}
+
+export interface AutomationRuleDto {
+  id: number;
+  nameEn: string;
+  nameAr: string;
+  triggerType: string;
+  conditionJson: string;
+  actionType: string;
+  enabled: boolean;
+  lastRunAt?: string | null;
+  lastRunStatus: string;
+  runCount: number;
+}
+
+export interface AutomationRunResultDto {
+  ok: boolean;
+  status: string;
+  latencyMs: number;
+  note?: string | null;
+}

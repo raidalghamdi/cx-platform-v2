@@ -27,6 +27,12 @@ public class AppDbContext : DbContext
     public DbSet<GovernanceBody>       GovernanceBodies      => Set<GovernanceBody>();
     public DbSet<GovernanceDecision>   GovernanceDecisions   => Set<GovernanceDecision>();
 
+    // Phase 2
+    public DbSet<AboutSection>         AboutSections         => Set<AboutSection>();
+    public DbSet<CopilotInteraction>   CopilotInteractions   => Set<CopilotInteraction>();
+    public DbSet<AutomationRule>       AutomationRules       => Set<AutomationRule>();
+    public DbSet<PortalRequest>        PortalRequests        => Set<PortalRequest>();
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         // ── Users ───────────────────────────────────────────────────────────
@@ -242,6 +248,57 @@ public class AppDbContext : DbContext
             e.Property(x => x.Decision).HasColumnType("text");
             e.Property(x => x.OwnerEn).HasMaxLength(190);
             e.Property(x => x.OwnerAr).HasMaxLength(190);
+        });
+
+        // ── Phase 2: About sections ────────────────────────────────────────
+        mb.Entity<AboutSection>(e =>
+        {
+            e.ToTable("about_sections");
+            e.HasIndex(x => x.OrderIndex);
+            e.Property(x => x.KeyEn).HasMaxLength(190).IsRequired();
+            e.Property(x => x.KeyAr).HasMaxLength(190).IsRequired();
+            e.Property(x => x.BodyEn).HasColumnType("text");
+            e.Property(x => x.BodyAr).HasColumnType("text");
+        });
+
+        // ── Phase 2: Copilot interactions ──────────────────────────────────
+        mb.Entity<CopilotInteraction>(e =>
+        {
+            e.ToTable("copilot_interactions");
+            e.HasIndex(x => x.UserId);
+            e.HasIndex(x => x.CreatedAt);
+            e.Property(x => x.Intent).HasMaxLength(32).IsRequired();
+            e.Property(x => x.PromptEn).HasColumnType("text");
+            e.Property(x => x.PromptAr).HasColumnType("text");
+            e.Property(x => x.ResponseEn).HasColumnType("text");
+            e.Property(x => x.ResponseAr).HasColumnType("text");
+        });
+
+        // ── Phase 2: Automation rules ──────────────────────────────────────
+        mb.Entity<AutomationRule>(e =>
+        {
+            e.ToTable("automation_rules");
+            e.HasIndex(x => x.Enabled);
+            e.Property(x => x.NameEn).HasMaxLength(190).IsRequired();
+            e.Property(x => x.NameAr).HasMaxLength(190).IsRequired();
+            e.Property(x => x.TriggerType).HasMaxLength(64).IsRequired();
+            e.Property(x => x.ActionType).HasMaxLength(64).IsRequired();
+            e.Property(x => x.ConditionJson).HasColumnType("json");
+            e.Property(x => x.LastRunStatus).HasMaxLength(32);
+        });
+
+        // ── Phase 2: Portal requests ───────────────────────────────────────
+        mb.Entity<PortalRequest>(e =>
+        {
+            e.ToTable("portal_requests");
+            e.HasIndex(x => x.CustomerId);
+            e.HasIndex(x => x.Status);
+            e.Property(x => x.Type).HasMaxLength(32);
+            e.Property(x => x.Status).HasMaxLength(32);
+            e.Property(x => x.SubjectEn).HasMaxLength(255);
+            e.Property(x => x.SubjectAr).HasMaxLength(255);
+            e.Property(x => x.BodyEn).HasColumnType("text");
+            e.Property(x => x.BodyAr).HasColumnType("text");
         });
     }
 }

@@ -267,3 +267,122 @@ public record CreateGovernanceDecisionRequest(
     string OwnerEn,
     string OwnerAr,
     DateTime? DueDate);
+
+// ── Phase 2: About ─────────────────────────────────────────────────────────
+
+public record AboutSectionDto(
+    long Id,
+    string KeyEn,
+    string KeyAr,
+    string BodyEn,
+    string BodyAr,
+    int OrderIndex,
+    DateTime UpdatedAt);
+
+public record UpdateAboutSectionRequest(
+    string KeyEn,
+    string KeyAr,
+    string BodyEn,
+    string BodyAr,
+    int OrderIndex);
+
+// ── Phase 2: Architecture (static reference data) ──────────────────────────
+
+public record ArchitectureDomainDto(
+    string Id,
+    string NameEn,
+    string NameAr,
+    string DescriptionEn,
+    string DescriptionAr);
+
+public record ArchitecturePatternDto(
+    string Id,
+    string NameEn,
+    string NameAr,
+    string Style,                              // synchronous / async / batch
+    string UsageEn,
+    string UsageAr);
+
+public record ArchitectureReferenceDto(
+    IReadOnlyList<ArchitectureDomainDto> Domains,
+    IReadOnlyList<ArchitecturePatternDto> Patterns);
+
+// ── Phase 2: Portal ────────────────────────────────────────────────────────
+
+public record PortalRequestDto(
+    long Id,
+    string Type,
+    string SubjectEn,
+    string SubjectAr,
+    string BodyEn,
+    string BodyAr,
+    string Status,
+    DateTime CreatedAt);
+
+public record CreatePortalRequestRequest(
+    string Type,
+    string SubjectEn,
+    string SubjectAr,
+    string BodyEn,
+    string BodyAr);
+
+// ── Phase 2: Copilot ───────────────────────────────────────────────────────
+
+public record AskCopilotRequest(
+    string Intent,
+    string PromptEn,
+    string PromptAr);
+
+public record CopilotInteractionDto(
+    long Id,
+    string Intent,
+    string PromptEn,
+    string PromptAr,
+    string ResponseEn,
+    string ResponseAr,
+    int LatencyMs,
+    bool Success,
+    DateTime CreatedAt);
+
+// ── Phase 2: Audit ─────────────────────────────────────────────────────────
+
+public record AuditEventDto(
+    long Id,
+    string Kind,
+    long? ActorUserId,
+    string TargetKind,
+    long? TargetId,
+    string PrevHash,
+    string EntryHash,
+    string PayloadJson,
+    DateTime At);
+
+public record AuditPageDto(
+    IReadOnlyList<AuditEventDto> Items,
+    int Total,
+    int Page,
+    int PageSize);
+
+public record AuditVerifyResultDto(
+    bool Ok,
+    int Total,
+    int? FirstBrokenIndex,
+    long? FirstBrokenId);
+
+// ── Phase 2: Automation ────────────────────────────────────────────────────
+
+public record AutomationRuleDto(
+    long Id,
+    string NameEn,
+    string NameAr,
+    string TriggerType,
+    string ConditionJson,
+    string ActionType,
+    bool Enabled,
+    DateTime? LastRunAt,
+    string LastRunStatus,
+    int RunCount);
+
+public record ToggleAutomationRequest(bool Enabled);
+
+public record AutomationRunResultDto(bool Ok, string Status, int LatencyMs, string? Note);
